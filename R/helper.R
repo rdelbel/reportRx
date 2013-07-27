@@ -1,5 +1,5 @@
-pstprn<-function(x){paste(x[1]," (",paste(x[-1],collapse="-"),")",sep="")}
-psthr<-function(x,y=2){pstprn(c(round(x[1],y),round(x[2],2),round(x[3],2)))}
+pstprn<-function(x){paste(x[1]," (",paste(x[-1],collapse=","),")",sep="")}
+psthr<-function(x,y=2){paste(round(x[1],y)," (",round(x[2],2),",",round(x[3],2),")",sep="")}
 covnm<-function(betanames,call){
   sapply(betanames,function(betaname){
     
@@ -82,7 +82,10 @@ sanitizestr<-function(str){
   as.vector(sapply(str,function(char){sanitize(char)}))
 }
 
-lbld<-function(strings){sapply(strings,function(x){return(paste("\\textbf{",x,"}",sep=""))})}
+lbld<-function(strings){sapply(strings,function(x){
+  if(is.null(x)) return(x)
+  if(is.na(x)) return(x)
+  return(paste("\\textbf{",x,"}",sep=""))})}
 
 addspace<-function(x){
   paste("~~~",x,sep="")
@@ -95,4 +98,34 @@ lpvalue<-function(x){
   else x=signif(x,2)
   if(x<=0.05) return(paste("\\textbf{",x,"}",sep=""))
   else return(x)
+}
+
+boxcoxlm<-function(y,x){
+  require(geoR)
+  missing<-unique(unlist(lapply(data.frame(y,x),function(xx) which(is.na(xx)))))
+  notmissing<-setdiff(seq_len(length(y)),missing)
+  a<-y[notmissing]
+  if(class(x)=="data.frame"){
+    b<-x[notmissing,]
+  }else{
+    b<-x[notmissing]
+  }
+  b<-sapply(b,function(bb){
+    if(is.factor(bb)){
+      bb<-as.numeric(bb)-1  
+      if(length(table(bb))>=3){
+        bb<-as.matrix(model.matrix(~factor(bb)-1)[,-1])
+      }}
+    return(bb)}
+  )
+  if(class(b)=="list"){
+    b<-as.matrix(do.call(cbind.data.frame, b))
+  }else{
+    b<-as.matrix(b)              
+  }
+  
+  lambda<-unlist(unlist(boxcoxfit(a,b,lambda2=T))[1:2])                     
+  a<-((a+lambda[2])^lambda[1]-1)/lambda[1]
+  out<-lm(a~b)
+  return(list(out,lambda))
 }

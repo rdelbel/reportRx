@@ -1,44 +1,46 @@
-plotkm<-function(data,surv,group=1,pos="bottomleft",units="months")
+plotkm<-function(data,response,group=1,pos="bottomleft",units="months",CI=F,legend=T)
 {
   if(class(group)=="numeric"){  
-    kfit<-survfit(as.formula(paste("Surv(",surv[1],",",surv[2],")~1",sep="")),data=data)
+    kfit<-survfit(as.formula(paste("Surv(",response[1],",",response[2],")~1",sep="")),data=data)
     sk<-summary(kfit)$table
     levelnames<-paste("N=",sk[1], ", Events=",sk[4]," (",round(sk[4]/sk[1],2)*100,"%)",sep="")
-    main<-paste("KM-Curve for ",nicename(surv[2]),sep="")
+    main<-paste("KM-Curve for ",nicename(response[2]),sep="")
     
   }else if(length(group)>1){
     return("Currently you can only stratify by 1 variable")
   }else{      
-    lr<-survdiff(as.formula(paste("Surv(",surv[1],",",surv[2],")~", paste(group,collapse="+"),sep="")),data=data)
+    lr<-survdiff(as.formula(paste("Surv(",response[1],",",response[2],")~", paste(group,collapse="+"),sep="")),data=data)
     lrpv<-1-pchisq(lr$chisq, length(lr$n)- 1)
     levelnames<-levels(data[,group])
-    kfit<-survfit(as.formula(paste("Surv(",surv[1],",",surv[2],")~", paste(group,collapse="+"),sep="")),data=data)
-    main<-paste("KM-Curve for ",nicename(surv[2])," by ", nicename(group),sep="")
+    kfit<-survfit(as.formula(paste("Surv(",response[1],",",response[2],")~", paste(group,collapse="+"),sep="")),data=data)
+    main<-paste("KM-Curve for ",nicename(response[2])," stratified by ", nicename(group),sep="")
     levelnames<-sapply(1:length(levelnames), function(x){paste(levelnames[x]," n=",lr$n[x],sep="")})
     
   }  
   
-  plot(kfit,mark.time=T, col=1:length(levelnames),xlab=paste("Time (",cap(units),")",sep=""),
-       ylab="Suvival Probability ",conf.int=F,cex=1.1,
+  
+  plot(kfit,mark.time=T, lty=1:length(levelnames),xlab=paste("Time (",cap(units),")",sep=""),
+       ylab="Suvival Probability ",cex=1.1, conf.int=CI,
        main=main)
   
-  if(class(group)=="numeric"){legend(pos,levelnames,col=1:length(levelnames),bty="n")
-  }else{ legend(pos,c(levelnames,paste("p-value=",pvalue(lrpv)," (Log Rank)",sep="")),
-                col=c(1:length(levelnames),"white"),lty=1,bty="n")}
+  
+  if(legend){
+    if(class(group)=="numeric"){legend(pos,levelnames,lty=1:length(levelnames),bty="n")
+    }else{ legend(pos,c(levelnames,paste("p-value=",pvalue(lrpv)," (Log Rank)",sep="")),
+                  col=c(rep(1,length(levelnames)),"white"),lty=1:(length(levelnames)+1),bty="n")}
+  }
 }
 
-
-etsum<- function(data,surv,group=1,times=c(12,24)){
-  
-  kfit<-summary(survfit(as.formula(paste("Surv(",surv[1],",",surv[2],")~",group,sep=""))  ,data=data))
-  kfit2<-summary(survfit(as.formula(paste("Surv(",surv[1],",",surv[2],")~",group,sep="")) ,data=data),times=times)
+etsum<- function(data,response,group=1,times=c(12,24)){
+  kfit<-summary(survfit(as.formula(paste("Surv(",response[1],",",response[2],")~",group,sep=""))  ,data=data))
+  kfit2<-summary(survfit(as.formula(paste("Surv(",response[1],",",response[2],")~",group,sep="")) ,data=data),times=times)
   tab<-as.data.frame(cbind(strata=as.character(kfit2$strata),times=kfit2$time,SR=paste(round(kfit2$surv*100,0)," (",round(kfit2$lower*100,0),"-",round(kfit2$upper*100,0),")",sep="")))
   tbl<-kfit2$table    
   
   if(class(group)!="numeric"){
-    med=by(data,data[,group],function(x) median(x[,surv[1]]))
-    min=by(data,data[,group],function(x) min(x[,surv[1]]))
-    max=by(data,data[,group],function(x) max(x[,surv[1]]))
+    med=by(data,data[,group],function(x) median(x[,response[1]],na.rm=T))
+    min=by(data,data[,group],function(x) min(x[,response[1]],na.rm=T))
+    max=by(data,data[,group],function(x) max(x[,response[1]],na.rm=T))
     survtimes<-data.frame(strata=as.character(kfit$strata),kfit$time)   
     minst<-round(as.numeric(by(survtimes,survtimes$strata,function(x) min (x[,2]))),1)
     maxst<-round(as.numeric(by(survtimes,survtimes$strata,function(x) max (x[,2]))),1)    
@@ -75,9 +77,9 @@ etsum<- function(data,surv,group=1,times=c(12,24)){
                "MinET"=minst,"MaxET"=maxst,tab)
     rownames(tab)<-NULL
   }else{
-    med=median(data[,surv[1]])
-    min=min(data[,surv[1]])
-    max=max(data[,surv[1]])
+    med=median(data[,response[1]],na.rm=T)
+    min=min(data[,response[1]],na.rm=T)
+    max=max(data[,response[1]],na.rm=T)
     if(length(times)>1){
       tab<-data.frame(t(tab))
       rownames(tab)<-NULL      
@@ -96,10 +98,10 @@ etsum<- function(data,surv,group=1,times=c(12,24)){
   return(tab)
 }
 
-petsum<-function(data,surv,group="1",times=c(12,14),units="months"){
-  t<-etsum(data,surv,group,times)
+petsum<-function(data,response,group=1,times=c(12,14),units="months"){
+  t<-etsum(data,response,group,times)
   
-  #plotkm(nona,surv,group)
+  #plotkm(nona,response,group)
   
   names<-names(t)
   if("strata"%in% names){
@@ -147,7 +149,8 @@ petsum<-function(data,surv,group="1",times=c(12,14),units="months"){
     cat("\n",out,"\n")
   })
 }
-covsum<-function(data,covs,sigcov,numobs=NULL,markup=T,sanitize=T,nicenames=T){
+
+covsum<-function(data,covs,maincov=NULL,numobs=NULL,markup=T,sanitize=T,nicenames=T){
   
   if(!markup){
     lbld<-identity
@@ -156,41 +159,55 @@ covsum<-function(data,covs,sigcov,numobs=NULL,markup=T,sanitize=T,nicenames=T){
   }
   if(!sanitize) sanitizestr<-identity  
   if(!nicenames) nicename<-identity
-  
-  levels<-levels(data[,sigcov])
+  if(!is.null(maincov)){
+  levels<-names(table(data[,maincov]))
   levels<-c(list(levels),as.list(levels))
+  }else{
+    levels<-"NOMAINCOVNULLNA"
+  }
   N=nrow(data)
-  nsigcov<-c(sum(table(data[,sigcov])),table(data[,sigcov]))
-  out<-sapply(covs,function(cov){
+  if(!is.null(maincov)){
+  nmaincov<-c(sum(table(data[,maincov])),table(data[,maincov]))
+  }else{
+    nmaincov<-N
+    p<-NULL
+  }
+  out<-lapply(covs,function(cov){
+    ismiss=F
     n<-sum(table(data[,cov]))
     
     #Set up the first coulmn
     factornames<-NULL
-    if(is.null(numobs[[cov]]))  numobs[[cov]]<-nsigcov
-    if(numobs[[cov]][1]-n>0) factornames<-c(factornames,"Missing")
-    
-    
-    
-    
+    if(is.null(numobs[[cov]]))  numobs[[cov]]<-nmaincov
+    if(numobs[[cov]][1]-n>0) {ismiss=T
+      factornames<-c(factornames,"Missing")
+    }
     #if the covariate is a factor
     if(is.factor(data[,cov])){
-      factornames<-c(levels(data[,cov]),factornames)    
-      p<-lpvalue(fisher.test(data[,sigcov],data[,cov])$p.value)
-      
-      
+      factornames<-c(levels(data[,cov]),factornames)
+      if(!is.null(maincov)){
+      p<-try(lpvalue(fisher.test(data[,maincov],data[,cov])$p.value))
+      if(class(p)=="try-error") p<-chisq.test(data[,maincov],data[,cov])$p.value
+      p<-lpvalue(p)
+      } 
+        
       
       #set up the main columns
       onetbl<-mapply(function(sublevel,N){
         missing<-NULL
-        subdata<-subset(data,subset=data[,sigcov]%in%sublevel)
+       if(sublevel[1]!="NOMAINCOVNULLNA"){
+        subdata<-subset(data,subset=data[,maincov]%in%sublevel)
+        }else{
+          subdata<-data
+        }
         table<-table(subdata[,cov])
         tbl<-table(subdata[,cov])
         n<-sum(tbl)
         prop<-round(tbl/n,2)*100
         prop<-sapply(prop,function(x){if(!is.nan(x)){x} else{0}})
-        tbl<-mapply(function(num,prop){paste(num," (",prop,")",sep="")},tbl,prop)
-        if("Missing" %in% factornames) missing<-N-n 
-        tbl<-c(tbl,missing)    
+        tbl<-mapply(function(num,prop){paste(num," (",prop,")",sep="")},tbl,prop)       
+        if(ismiss) missing<-N-n 
+        tbl<-c(tbl,lbld(missing))       
         return(tbl)
       },levels,numobs[[cov]])
       
@@ -198,51 +215,70 @@ covsum<-function(data,covs,sigcov,numobs=NULL,markup=T,sanitize=T,nicenames=T){
     }else{
       #setup the first column
       factornames<-c("Mean (sd)", "Median (Min,Max)",factornames)
-      p<-lpvalue(anova(lm(data[,cov]~data[,sigcov]))[5][[1]][1])
+      if(!is.null(p)){
+      p<-try(anova(lm(data[,cov]~data[,maincov]))[5][[1]][1])
+      if(class(p)=="try-error") p<-NA
+      p<-lpvalue(p)}
+      
       
       #set up the main columns
       onetbl<-mapply(function(sublevel,N){
         missing<-NULL
-        subdata<-subset(data,subset=data[,sigcov]%in%sublevel)
+       if(sublevel[1]!="NOMAINCOVNULLNA"){
+        subdata<-subset(data,subset=data[,maincov]%in%sublevel)
+        }else{subdata<-data}
         summary<-round(summary(subdata[,cov]),1)
         meansd<-paste(summary[4]," (", round(sd(subdata[,cov],na.rm=T),1),")",sep="")
         mmm<-paste(summary[3]," (",summary[1],",",summary[6],")",sep="")
         
+        
         #if there is a missing in the whole data
-        if("Missing" %in% factornames){          
+        if(ismiss){          
           n<-sum(table(subdata[,cov]))
-          missing<-N-n }       
-        tbl<-c(meansd,mmm,missing)
+          missing<-N-n 
+        }
+        tbl<-c(meansd,mmm,lbld(missing))
         
         return(tbl)}   
                      ,levels,numobs[[cov]])}
     
-    
     #Add the first column to the main columns and get the matrix ready for later
     factornames<-addspace(sanitizestr(nicename(factornames)))    
     onetbl<-cbind(factornames,onetbl)
-    onetbl<-rbind(c(lbld(sanitizestr(nicename(cov))),rep("",length(levels[[1]])+1)),onetbl)
-    onetbl<-cbind(onetbl,c(p,rep("",nrow(onetbl)-1)))
+    
+    if(!is.null(maincov)){
+      onetbl<-rbind(c(lbld(sanitizestr(nicename(cov))),rep("",length(levels[[1]])+1)),onetbl)
+      onetbl<-cbind(onetbl,c(p,rep("",nrow(onetbl)-1)))
+    }else{
+      onetbl<-rbind(lbld(sanitizestr(nicename(cov))),onetbl)
+    }
     rownames(onetbl)<-NULL
     colnames(onetbl)<-NULL
     return(onetbl)})
+  
   table<-do.call(rbind.data.frame, out)
   rownames(table)<-NULL
+  if(!is.null(maincov)){
   colnames(table)<-c("Covariate",paste("Full Sample (n=",N,")",sep=""),
                      mapply(function(x,y){paste(x," (n=",y,")",sep="")},
-                            levels(data[,sigcov]),table(data[,sigcov])),"p-value (indep)")
+                            names(table(data[,maincov])),table(data[,maincov])),"p-value (indep)")
+  }else{
+    colnames(table)<-c("Covariate",paste("n=",N,")",sep=""))
+    
+  }
   return(table)
 }
 
-pcovsum<-function(data,covs,sigcov,numobs,latex=F){
+pcovsum<-function(data,covs,maincov,numobs,latex=F){
   if(!latex){
-    print.xtable(xtable(covsum(data,covs,sigcov,numobs)),include.rownames=F,sanitize.text.function=identity,table.placement="H")
+    print.xtable(xtable(covsum(data,covs,maincov,numobs)),include.rownames=F,sanitize.text.function=identity,table.placement="H")
   }else{  
     
-    print.xtable(xtable(covsum(data,covs,sigcov,numobs)),include.rownames=F,sanitize.text.function=identity,table.placement="H",floating=FALSE,tabular.environment="longtable")
+    print.xtable(xtable(covsum(data,covs,maincov,numobs)),include.rownames=F,sanitize.text.function=identity,table.placement="H",floating=FALSE,tabular.environment="longtable")
   }}
-uvsum<-function(data,surv,covs,strat="1",markup=T,sanitize=T,nicenames=T){
-  
+
+uvsum<-function(data,response,covs,type,boxcox=F,strata=1,markup=T,sanitize=T,nicenames=T,testing=F){
+
   if(!markup){
     lbld<-identity
     addspace<-identity
@@ -251,24 +287,56 @@ uvsum<-function(data,surv,covs,strat="1",markup=T,sanitize=T,nicenames=T){
   if(!sanitize) sanitizestr<-identity  
   if(!nicenames) nicename<-identity
   
+  if(class(strata)!="numeric") {strata<-sapply(strata,function(stra){paste("strata(",stra,")",sep="")})
+   }else{strata<-""}
   
-  names<-names(data)
-  if(class(strat)!="numeric") {strat<-sapply(strat,function(stra){paste("strata(",stra,")",sep="")})
-  }else strat<-1
-  m1<-coxph(as.formula(paste(paste("Surv(",surv[1],",",surv[2],")",sep=""),"~",paste(strat,collapse="+"),sep="")),data=data)  
+  if(type=="coxph"){                                 
+  beta<-"HR(95%CI)"
+  }else if (type=="logistic"){
+  beta<-"OR(95%CI)"  
+  }else if (type=="linear"){
+    beta<-"Estimate(95%CI)"
+  }else{
+    return("type must be either coxph, logisitc, linear")
+  }
   out<-lapply(covs,function(cov){
-    #cat(cov,"\n")
-    m2<-update(m1,as.formula(paste(".~.+",cov,sep="")))
-    
+    cov2<-cov
+    if(testing) print(cov)
     if(is.factor(data[,cov])){
       levelnames<-sapply(sapply(sapply(levels(factor(data[,cov])),nicename),sanitizestr),addspace)
       cov<-lbld(sanitizestr(nicename(cov)))
       title<-NULL
-      body<-NULL    
+      body<-NULL
+      if(type=="coxph"){
+      m2<-coxph(as.formula(paste(paste("Surv(",response[1],",",response[2],")",sep=""),"~",cov2,ifelse(strata=="","","+"),paste(strata,collapse="+"),sep="")),data=data)  
+        
       hazardratio<-c("Reference",apply(matrix(summary(m2)$conf.int[,c(1,3,4)],ncol=3),1,psthr))    
       pvalue<-c("",sapply(summary(m2)$coef[,5],lpvalue))
-      title<-c(cov,"","",lpvalue(summary(m2)$logtest[3]))
-      
+      title<-c(cov,"","",lpvalue(summary(m2)$waldtest[3]))
+      }else if(type=="logistic"){
+        m2<-glm(as.formula(paste(response,"~",cov2,sep="")),family="binomial",data=data)   
+        #globalpvalue<-1-pchisq(2*(summary(m2)$null.deviance-summary(m2)$deviance),summary(m2)$df.null-summary(m2)$df.residual)
+        globalpvalue<-try(wald.test(b=m2$coefficients[-1],Sigma=vcov(m2)[-1,-1],Terms=seq_len(length(m2$coefficients[-1])))$result$chi2[3]);
+        if(class(globalpvalue) == "try-error") globalpvalue<-"NA"
+        
+        m<-summary(m2)$coefficients
+        hazardratio<-c("Reference",apply(cbind(exp(m[-1,1]),exp(m[-1,1]-1.96*m[-1,2]),exp(m[-1,1]+1.96*m[-1,2])),1,psthr))        
+        pvalue<-c("",sapply(m[-1,4],lpvalue))
+        title<-c(cov,"","",lpvalue(globalpvalue))
+        
+      }else if(type=="linear"){
+        if(!boxcox){m2<-lm(as.formula(paste(response,"~",cov2,sep="")),data=data)
+        }else{m2<-boxcoxlm(data[,response],data[,cov2])[[1]]}
+        m<-summary(m2)$coefficients
+        #globalpvalue<-anova(m2)[5][[1]][1])
+        globalpvalue<-try(wald.test(b=m2$coefficients[-1],Sigma=vcov(m2)[-1,-1],Terms=seq_len(length(m2$coefficients[-1])))$result$chi2[3]);
+        if(class(globalpvalue) == "try-error") globalpvalue<-"NA"
+        
+        
+        hazardratio<-c("Reference",apply(cbind(m[-1,1],m[-1,1]-1.96*m[-1,2],m[-1,1]+1.96*m[-1,2]),1,psthr))        
+        pvalue<-c("",sapply(m[-1,4],lpvalue))
+        title<-c(cov,"","",lpvalue(globalpvalue))            
+    }
       if(length(levelnames)==2){
         body<-cbind(levelnames,hazardratio,c("",""),c("",""))    
       }else{
@@ -280,12 +348,40 @@ uvsum<-function(data,surv,covs,strat="1",markup=T,sanitize=T,nicenames=T){
       return(list(out,nrow(out)))
     }else
     {
-      cov<-lbld(sanitizestr(nicename(cov)))    
-      out<-matrix(c(cov,psthr(summary(m2)$conf.int[,c(1,3,4)]),"",lpvalue(summary(m2)$logtest[3])),ncol=4)
+      cov<-lbld(sanitizestr(nicename(cov)))
+      if(type=="coxph"){
+        m2<-coxph(as.formula(paste(paste("Surv(",response[1],",",response[2],")",sep=""),"~",cov2,ifelse(strata=="","","+"),paste(strata,collapse="+"),sep="")),data=data)  
+        
+        out<-matrix(c(cov,psthr(summary(m2)$conf.int[,c(1,3,4)]),"",lpvalue(summary(m2)$waldtest[3])),ncol=4)
+        
+      }else if(type=="logistic"){
+        m2<-glm(as.formula(paste(response,"~",cov2,sep="")),family="binomial",data=data)    
+        
+        m<-summary(m2)$coefficients
+        
+        #globalpvalue<-1-pchisq(2*(summary(m2)$null.deviance-summary(m2)$deviance),summary(m2)$df.null-summary(m2)$df.residual)
+        globalpvalue<-try(wald.test(b=m2$coefficients[-1],Sigma=vcov(m2)[-1,-1],Terms=seq_len(length(m2$coefficients[-1])))$result$chi2[3]);
+        if(class(globalpvalue) == "try-error") globalpvalue<-"NA"
+        
+        out<-matrix(c(cov,psthr(c(exp(m[-1,1]),exp(m[-1,1]-1.96*m[-1,2]),exp(m[-1,1]+1.96*m[-1,2]))),"",lpvalue(globalpvalue)),ncol=4)
+        
+        
+      }else if(type=="linear"){
+        if(!boxcox){m2<-lm(as.formula(paste(response,"~",cov2,sep="")),data=data)
+        }else{m2<-boxcoxlm(data[,response],data[,cov2])[[1]]}
+        #globalpvalue<-anova(m2)[5][[1]][1])
+        globalpvalue<-try(wald.test(b=m2$coefficients[-1],Sigma=vcov(m2)[-1,-1],Terms=seq_len(length(m2$coefficients[-1])))$result$chi2[3]);
+        if(class(globalpvalue) == "try-error") globalpvalue<-"NA"
+        
+        m<-summary(m2)$coefficients
+        
+        out<-matrix(c(cov,psthr(c(m[-1,1],m[-1,1]-1.96*m[-1,2],m[-1,1]+1.96*m[-1,2])),"",lpvalue(globalpvalue)),ncol=4)
+                        
+      }
       return(list(out,nrow(out)))}})
   table<-lapply(out,function(x){return(x[[1]])})
   table<-do.call(rbind.data.frame, table)  
-  colnames(table)<-sapply(c("Covariate","HR(95\\%CI)","p-value","Global p-value"),lbld)
+  colnames(table)<-sapply(c("Covariate",sanitizestr(beta),"p-value","Global p-value"),lbld)
   return(table)
   
   index<-unlist(lapply(out,function(x){return(x[[2]])}))  
@@ -296,16 +392,16 @@ uvsum<-function(data,surv,covs,strat="1",markup=T,sanitize=T,nicenames=T){
   else return(table)
 }
 
-puvsum<-function(data,surv,covs,strata=1,latex=F){
+puvsum<-function(data,response,covs,type,boxcox=F,strata=1,latex=F){
   if(!latex){
-    print.xtable(xtable(uvsum(data,surv,covs,strata)),include.rownames=F,sanitize.text.function=identity,table.placement="H")
+    print.xtable(xtable(uvsum(data,response,covs,type,boxcox,strata)),include.rownames=F,sanitize.text.function=identity,table.placement="H")
   }else{
-    print.xtable(xtable(uvsum(data,surv,covs,strata)),include.rownames=F,sanitize.text.function=identity,table.placement="H",floating=FALSE,tabular.environment="longtable")
+    print.xtable(xtable(uvsum(data,response,covs,type,boxcox,strata)),include.rownames=F,sanitize.text.function=identity,table.placement="H",floating=FALSE,tabular.environment="longtable")
   }
   
 }
 
-mvsum<-function(data,model,markup=T,sanitize=T,nicenames=T){
+mvsum<-function(data,model,type,markup=T,sanitize=T,nicenames=T){
   if(!markup){
     lbld<-identity
     addspace<-identity
@@ -323,6 +419,18 @@ mvsum<-function(data,model,markup=T,sanitize=T,nicenames=T){
   call<-call[which(is.na(sapply(call,function(cov){charmatch("strata(",cov)}))==T)]
   call<-gsub("\\s","", call)
   betanames<-attributes(summary(model)$coefficients)$dimnames[[1]]
+  if(type=="linear"){
+    betanames<-betanames[-1]
+    beta<-"Estimate(95%CI)"    
+  }else if(type=="logistic"){
+    betanames<-betanames[-1]
+    beta<-"OR(95%CI)"  
+  }else if (type=="coxph"){
+      beta<-"HR(95%CI)"
+  }else{
+      return("type must be linear, logistic, or coxph")
+    }
+  
   indx<-as.vector(sapply(betanames,function(string){
     
     indx<-which(sapply(call,function(cov){charmatch(cov,string)})==1)
@@ -342,6 +450,10 @@ mvsum<-function(data,model,markup=T,sanitize=T,nicenames=T){
   
   
   y<-betaindx(indx)
+  if(type%in%c("linear","logistic")){
+    y<-lapply(y,function(x){ x+1})
+    betanames<-c("intercept",betanames)
+  }
   
   out<-lapply(y,function(covariateindex){
     
@@ -357,17 +469,31 @@ mvsum<-function(data,model,markup=T,sanitize=T,nicenames=T){
                                     out<-ifelse(is.na(result),cn,result)},level,oldcovname),collapse=":")}))
     levelnames<-addspace(sanitizestr(nicename(levelnames)))
     covariatename<-lbld(sanitizestr(nicename(paste(oldcovname,collapse=":"))))
-    globalpvalue<-try(wald.test(b=coef(model)[covariateindex],Sigma=vcov(model)[covariateindex,covariateindex],Terms=seq_along(covariateindex))$result$chi2[3]);
-    if(class(globalpvalue) == "try-error") globalpvalue<-"NA"
-    #globalpvalue=NA
-    globalpvalue<-lpvalue(globalpvalue)
     reference=NULL
     title=NULL
     body=NULL
     
-    #if not interaction
+    globalpvalue<-try(wald.test(b=coef(model)[covariateindex],Sigma=vcov(model)[covariateindex,covariateindex],Terms=seq_along(covariateindex))$result$chi2[3]);
+    if(class(globalpvalue) == "try-error") globalpvalue<-"NA"
+    globalpvalue<-lpvalue(globalpvalue)
+    
+    if(type=="coxph"){
     hazardratio<-c(apply(matrix(summary(model)$conf.int[covariateindex,c(1,3,4)],ncol=3),1,psthr))
     pvalues<-c(sapply(summary(model)$coef[covariateindex,5],lpvalue))
+    }else if (type=="logistic"){
+      m<-summary(model)$coefficients      
+      hazardratio<-apply(cbind(exp(m[covariateindex,1]),exp(m[covariateindex,1]-1.96*m[covariateindex,2]),
+                                             exp(m[covariateindex,1]+1.96*m[covariateindex,2])),1,psthr)        
+      pvalues<-c(sapply(m[covariateindex,4],lpvalue))
+    }else if (type=="linear"){
+      m<-summary(model)$coefficients      
+      
+      hazardratio<-apply(cbind(m[covariateindex,1],m[covariateindex,1]-1.96*m[covariateindex,2],
+                               m[covariateindex,1]+1.96*m[covariateindex,2]),1,psthr)        
+      pvalues<-sapply(m[covariateindex,4],lpvalue)
+    }
+    
+    #if not interaction
     
     if(length(betaname[[1]])==1){
       #if cts
@@ -403,8 +529,7 @@ mvsum<-function(data,model,markup=T,sanitize=T,nicenames=T){
   table<-lapply(out,function(x){return(x[[1]])})
   index<-unlist(lapply(out,function(x){return(x[[2]])}))  
   table<-do.call(rbind.data.frame, table)
-  colnames(table)<-sapply(c("Covariate",
-                            paste(sanitizestr("HR(95%CI)"),sep=""),"p-value","Global p-value"),lbld)
+  colnames(table)<-sapply(c("Covariate",sanitizestr(beta),"p-value","Global p-value"),lbld)
   return(table)
   lineindex<-rep(-1,length(index))
   #for(i in 1:length(index)){lineindex[i]<-sum(index[c(1:i)])}
@@ -413,18 +538,135 @@ mvsum<-function(data,model,markup=T,sanitize=T,nicenames=T){
   else return(table)  
 }
 
-pmvsum<-function(data,model){
-  print.xtable(xtable(mvsum(data,model)),include.rownames=F,sanitize.text.function=identity,table.placement="H")
+pmvsum<-function(data,model,type){
+  print.xtable(xtable(mvsum(data,model,type)),include.rownames=F,sanitize.text.function=identity,table.placement="H")
 }
 
-makedocx<-function(dir,fname,imwd,pdwd){
+makedocx<-function(dir,fname,pdwd,imwd=""){
   oldwd<-getwd()
+  if(imwd!=""){
   setwd(imwd)
   command<-paste("mogrify -path ", dir,"figure\\ ", "-format png ", dir, "figure\\*.pdf",sep="" )
   shell(command)
+  }
   setwd(pdwd)
   command<-paste("pandoc -o ",dir,fname,".docx ",dir,fname,".tex ",
                  "--default-image-extension=png",sep="")
   shell(command)
   setwd(oldwd)
+}
+
+bwselect<-function(data,response,covs,strata=1,type,force=NULL,p=0.05,test=F,boxcox=F){
+  while(T){
+    
+    if(type=="logistic"){
+      pvalues<-sapply(covs,function(cov){
+        m0<-glm(as.formula(paste(response,"~",paste(covs,collapse="+"),sep="")),
+                data=subset(data,!is.na(data[,cov])),family="binomial")
+        m1<-update(m0,as.formula(paste(".~.-",cov,sep="")))
+        1-pchisq(summary(m1)$deviance-summary(m0)$deviance,
+                 summary(m1)$df.residual-summary(m0)$df.residual)
+      })          
+      if(test) print(pvalues)
+      if(length(covs)==1){
+        if(max(pvalues)>p){
+          return(glm(as.formula(paste(response,"~1",sep="")),
+                     data=data,family="binomial"))
+        }else{
+          return(glm(as.formula(paste(response,"~",paste(covs,collapse="+"),sep="")),
+                     data=data,family="binomial"))
+        }}else{
+          if(max(pvalues)>p){
+            covs<-covs[-which.max(pvalues)]
+          }else{
+            return(glm(as.formula(paste(response,"~",paste(covs,collapse="+"),sep="")),
+                       data=data,family="binomial"))
+          }}
+    }else if(type=="linear"){
+      pvalues<-sapply(covs,function(cov){
+        if(!boxcox){
+          m0<-lm(as.formula(paste(response,"~",paste(covs,collapse="+"),sep="")),
+                 data=subset(data,!is.na(data[,cov])))
+          m1<-update(m0,as.formula(paste(".~.-",cov,sep="")))
+        }else{
+          m0<-boxcoxlm(data[,response],data[,covs])[[1]]
+          m1<-boxcoxlm(data[!is.na(data[,cov]),response],data[!is.na(data[,cov]),setdiff(covs,cov)])[[1]]
+        }
+        1-pchisq(2*(logLik(m0)-logLik(m1)),
+                 summary(m0)$df[1]-summary(m1)$df[1])
+      })          
+      if(test) print(pvalues)
+      if(length(covs)==1){
+        if(max(pvalues)>p){
+          return(lm(as.formula(paste(response,"~1",sep="")),
+                    data=data))
+        }else{
+          return(lm(as.formula(paste(response,"~",paste(covs,collapse="+"),sep="")),
+                    data=data))
+        }}else if(length(covs)==2 & boxcox & max(pvalues)>p){
+          return(boxcoxlm(data[,response],data[,covs[which.min(pvalues)]]))
+          
+        }
+      else{
+        if(max(pvalues)>p){
+          covs<-covs[-which.max(pvalues)]
+        }else{
+          if(!boxcox){
+            return(lm(as.formula(paste(response,"~",paste(covs,collapse="+"),sep="")),
+                      data=data))
+          }else{
+            return(boxcoxlm(data[,response],data[,covs]))
+          }
+        }}}
+    
+  }}
+
+boxcoxlm<-function(y,x){
+  require(geoR)
+  missing<-unique(unlist(lapply(data.frame(y,x),function(xx) which(is.na(xx)))))
+  notmissing<-setdiff(seq_len(length(y)),missing)
+  a<-y[notmissing]
+  if(class(x)=="data.frame"){
+    b<-x[notmissing,]
+    b<-sapply(b,function(bb){
+      if(is.factor(bb)){
+        bb<-as.numeric(bb)-1  
+        if(length(table(bb))>=3){
+          bb<-as.matrix(model.matrix(~factor(bb)-1)[,-1])
+        }}
+      return(bb)})
+    if(class(b)=="list"){
+      b<-as.matrix(do.call(cbind.data.frame, b))
+    }else{
+      b<-as.matrix(b)
+    }}
+  else{
+    b<-x[notmissing]
+    if (is.factor(b)) {
+      b <- as.numeric(b) - 1
+      if (length(table(x)) >= 3) {
+        b <- as.matrix(model.matrix(~factor(b) - 1)[, -1])
+      }
+    }
+    b<-as.matrix(b)   
+  }
+  
+  
+  
+  
+  lambda<-unlist(unlist(boxcoxfit(a,b,lambda2=T))[1:2])                     
+  a<-((a+lambda[2])^lambda[1]-1)/lambda[1]
+  out<-lm(a~b)
+  return(list(out,lambda))
+}
+
+plotci<-function(data,response,units="months"){
+  fita<-cuminc(data[,response[1]],data[,response[2]])
+  plot(fita[[1]]$time,sapply(fita[[1]]$est+1.96*sqrt(fita[[1]]$var),function(x) min(x,1)),
+       type="l",lty=2,main=paste("CI plot for ",sanitizestr(nicename(response[2])),sep=""),
+       xlab=paste("Time (",cap(units),")",sep=""), ylim=c(0,1),
+       ylab=paste("Incidence of ",sanitizestr(nicename(response[2])),sep=""))
+  lines(fita[[1]]$time,fita[[1]]$est)
+  lines(fita[[1]]$time,sapply(fita[[1]]$est-1.96*sqrt(fita[[1]]$var),
+                              function(x)max(x,0)),lty=2)
 }
