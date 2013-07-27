@@ -1,2 +1,2 @@
-export(makedocx, covsum, uvsum, mvsum, etsum, pcovsum, puvsum, pmvsum, petsum, plotkm, lbld, sanitizestr, nicename)
+export(makedocx, covsum, uvsum, mvsum, etsum, pcovsum, puvsum, pmvsum, petsum, plotkm, lbld, sanitizestr, nicename,boxcoxlm, psthr, cap, plotci,pvalue)
 import(survival, aod, xtable, reshape)

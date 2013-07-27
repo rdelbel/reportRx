@@ -1,0 +1,41 @@
+To install word macro and make shortcut follow the instructions here. First open word and hit alt+f8. Then create a new macro and copy paste the code below into it. To create a keyboard shortcut follow the instructions on this website according to your word version. http://www.gmayor.com/installing_macro.htm
+I suggest adding the shortkey ctrl+shift+alt+r 
+The macro currently formats the tables, centers the images, and deltes the [H]. It would be nice to automatically add the date under the author since this does not carry over from latex.
+
+
+
+Sub reportRx()
+
+  Application.ScreenUpdating = True
+    Dim tbl As Table
+    For Each tbl In ActiveDocument.Tables
+        tbl.Style = "Colorful List - Accent 3"
+        tbl.ApplyStyleFirstColumn = False
+       tbl.Rows.Alignment = wdAlignRowCenter
+    
+    Next
+    
+  
+      Dim shpIn As InlineShape, shp As Shape
+  For Each shpIn In ActiveDocument.InlineShapes
+    shpIn.Select
+    Selection.ParagraphFormat.Alignment = wdAlignParagraphCenter
+  Next shpIn
+  For Each shp In ActiveDocument.Shapes
+    shp.Select
+    Selection.ParagraphFormat.Alignment = wdAlignParagraphCenter
+  Next shp
+  
+  With Selection
+.HomeKey wdStory
+With .Find
+.ClearFormatting
+.Replacement.ClearFormatting
+While .Execute(findText:="[H]", _
+MatchWholeWord:=True)
+Selection.Range.Paragraphs(1).Range.Delete
+Wend
+End With
+End With
+
+End Sub
