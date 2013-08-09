@@ -1,0 +1,30 @@
+\name{etsum}
+\alias{etsum}
+\title{Get event time summary dataframe}
+\usage{
+  etsum(data, response, group = 1, times = c(12, 24))
+}
+\arguments{
+  \item{data}{dataframe containing data}
+
+  \item{response}{character vector with names of columns to
+  use for response}
+
+  \item{group}{string specifiying the column name of
+  stratification variable}
+
+  \item{times}{numeric vector of times you want survival
+  time provbabilities for.}
+}
+\description{
+  This functionw will output a dataframe with usefull
+  summary statistics from a coxph model
+}
+\examples{
+require(survival)
+etsum(lung,c("time","status"),sex)
+etsum(lung,c("time","status"))
+etsum(lung,c("time","status"),sex,c(1,2,3))
+}
+\keyword{dataframe}
+

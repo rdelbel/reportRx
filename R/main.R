@@ -1,5 +1,22 @@
-plotkm<-function(data,response,group=1,pos="bottomleft",units="months",CI=F,legend=T)
-{
+#' Plot KM curve
+#'
+#'This function will plot a KM curve with possible stratification. You can specifyif you want
+#'a legend or confidence bands as well as the units of time used.
+#'
+#' @param data dataframe containing your data
+#' @param response character vector with names of columns to use for response
+#' @param group string specifiying the column name of stratification variable
+#' @param pos what position you want the legend to be. Current option are bottomleft and topright
+#' @param units string specifying what the unit of time is use lower case and plural
+#' @param CI boolean to specify if you want confidence intervals
+#' @param legend boolean to specify if you want a legend
+#' @keywords plot
+#' @export 
+#' @examples
+#' require(survival)
+#' plotkm(lung,c("time","status))
+#' plotkm(lung,c("time","status),sex)
+plotkm<-function(data,response,group=1,pos="bottomleft",units="months",CI=F,legend=T){
   if(class(group)=="numeric"){  
     kfit<-survfit(as.formula(paste("Surv(",response[1],",",response[2],")~1",sep="")),data=data)
     sk<-summary(kfit)$table
@@ -31,6 +48,21 @@ plotkm<-function(data,response,group=1,pos="bottomleft",units="months",CI=F,lege
   }
 }
 
+#'Get event time summary dataframe
+#'
+#'This functionw will output a dataframe with usefull summary statistics from a coxph model
+#'
+#'@param data dataframe containing data
+#'@param response character vector with names of columns to use for response
+#'@param group string specifiying the column name of stratification variable
+#'@param times numeric vector of times you want survival time provbabilities for.
+#'@keywords dataframe
+#'@export
+#'@examples
+#'require(survival)
+#'etsum(lung,c("time","status"),sex)
+#'etsum(lung,c("time","status"))
+#'etsum(lung,c("time","status"),sex,c(1,2,3))
 etsum<- function(data,response,group=1,times=c(12,24)){
   kfit<-summary(survfit(as.formula(paste("Surv(",response[1],",",response[2],")~",group,sep=""))  ,data=data))
   kfit2<-summary(survfit(as.formula(paste("Surv(",response[1],",",response[2],")~",group,sep="")) ,data=data),times=times)
@@ -98,6 +130,22 @@ etsum<- function(data,response,group=1,times=c(12,24)){
   return(tab)
 }
 
+#'Print LaTeX event time summary
+#'
+#'Wrapper for the etsum function that prints paragraphs of text in LaTeX
+#'
+#'@param data dataframe containing data
+#'@param response character vector with names of columns to use for response
+#'@param group string specifiying the column name of stratification variable
+#'@param times numeric vector of times you want survival time provbabilities for.
+#'@param units string indicating the unit of time. Use lower case and plural.
+#'@keywords print
+#'@export 
+#'@examples
+#'#'require(survival)
+#'etsum(lung,c("time","status"),sex)
+#'etsum(lung,c("time","status"))
+#'etsum(lung,c("time","status"),sex,c(1,2,3),"months")
 petsum<-function(data,response,group=1,times=c(12,14),units="months"){
   t<-etsum(data,response,group,times)
   
@@ -150,6 +198,19 @@ petsum<-function(data,response,group=1,times=c(12,14),units="months"){
   })
 }
 
+#'Get covariate summary dataframe
+#'
+#'Returns a dataframe corresponding to a descriptive table
+#'
+#'@param data dataframe containing data
+#'@param covs character vector with the names of columns to include in table
+#'@param maincov covariate to stratify table by
+#'@param numobs named list overriding the number of people you expect to have the covariate
+#'@param markup boolean indicating if you want latex markup
+#'@param sanitize boolean indicating if you want to sanitize all strings to not break LaTeX
+#'@param nicenames booling indicating if you want to replace . and _ in strings with a space
+#'@keywords dataframe
+#'@export
 covsum<-function(data,covs,maincov=NULL,numobs=NULL,markup=T,sanitize=T,nicenames=T){
   
   if(!markup){
@@ -215,7 +276,7 @@ covsum<-function(data,covs,maincov=NULL,numobs=NULL,markup=T,sanitize=T,nicename
     }else{
       #setup the first column
       factornames<-c("Mean (sd)", "Median (Min,Max)",factornames)
-      if(!is.null(p)){
+      if(!is.null(maincov)){
         p<-try(anova(lm(data[,cov]~data[,maincov]))[5][[1]][1])
         if(class(p)=="try-error") p<-NA
         p<-lpvalue(p)}
@@ -255,28 +316,56 @@ covsum<-function(data,covs,maincov=NULL,numobs=NULL,markup=T,sanitize=T,nicename
     rownames(onetbl)<-NULL
     colnames(onetbl)<-NULL
     return(onetbl)})
-  
-  table<-do.call(rbind.data.frame, out)
+  table<-do.call("rbind", lapply(out, data.frame, stringsAsFactors = FALSE))
   rownames(table)<-NULL
   if(!is.null(maincov)){
     colnames(table)<-c("Covariate",paste("Full Sample (n=",N,")",sep=""),
                        mapply(function(x,y){paste(x," (n=",y,")",sep="")},
                               names(table(data[,maincov])),table(data[,maincov])),"p-value (indep)")
   }else{
-    colnames(table)<-c("Covariate",paste("n=",N,")",sep=""))
+    colnames(table)<-c("Covariate",paste("n=",N,sep=""))
     
   }
   return(table)
 }
-pcovsum<-function(data,covs,maincov,numobs,latex=F){
-  if(!latex){
+
+#'Print covariate summary Latex
+#'
+#'Returns a dataframe corresponding to a descriptive table
+#'
+#'@param data dataframe containing data
+#'@param covs character vector with the names of columns to include in table
+#'@param maincov covariate to stratify table by
+#'@param numobs named list overriding the number of people you expect to have the covariate
+#'@param TeX boolean indicating if you want to be able to view extra long tables in the LaTeX pdf. If TeX is T then the table will not convert properly to docx
+#'@keywords print
+#'@export
+pcovsum<-function(data,covs,maincov=NULL,numobs=NULL,TeX=F){
+  if(!TeX){
     print.xtable(xtable(covsum(data,covs,maincov,numobs)),include.rownames=F,sanitize.text.function=identity,table.placement="H")
   }else{  
     
     print.xtable(xtable(covsum(data,covs,maincov,numobs)),include.rownames=F,sanitize.text.function=identity,table.placement="H",floating=FALSE,tabular.environment="longtable")
   }}
 
-uvsum<-function(data,response,covs,type,boxcox=F,strata=1,markup=T,sanitize=T,nicenames=T,testing=F){
+#'Get univariate summary dataframe
+#'
+#'Returns a dataframe corresponding to a univariate table
+#'
+#'@param response string vector with name of response 
+#'@param covs character vector with the names of columns to fit univariate models to
+#'@param data dataframe containing data
+#'@param type string indicating he type of univariate model to fit. The function will try and guess what type you want based on your response. If you want to override this you can manually specify the type.
+#'Options in clude "linear", "logistic", "coxph", "crr", "boxcox","logistic"
+#'@param strata character vector of covariates to stratify by. Only used for coxph and crr
+#'@param markup boolean indicating if you want latex markup
+#'@param sanitize boolean indicating if you want to sanitize all strings to not break LaTeX
+#'@param nicenames booling indicating if you want to replace . and _ in strings with a space
+#'@param testing boolean to indicate if you want to print out the covariates before the model fits.
+#'This will allow you to see which model is not fitting if the function throws an error
+#'@keywords dataframe
+#'@export
+uvsum<-function(response,covs,data,type=NULL,strata=1,markup=T,sanitize=T,nicenames=T,testing=F){
   
   if(!markup){
     lbld<-identity
@@ -289,15 +378,26 @@ uvsum<-function(data,response,covs,type,boxcox=F,strata=1,markup=T,sanitize=T,ni
   if(class(strata)!="numeric") {strata<-sapply(strata,function(stra){paste("strata(",stra,")",sep="")})
   }else{strata<-""}
   
-  if(type=="coxph"){                                 
-    beta<-"HR(95%CI)"
-  }else if (type=="logistic"){
-    beta<-"OR(95%CI)"  
-  }else if (type=="linear"){
-    beta<-"Estimate(95%CI)"
-  }else{
-    return("type must be either coxph, logisitc, linear")
-  }
+  if(!is.null(type)){
+    if(type=="logistic"){beta<-"OR(95%CI)"
+    }else if(type=="linear"|type=="boxcox"){beta<-"Estimate(95%CI)"
+    }else if(type=="coxph"|type=="crr"){beta<-"HR(95%CI)"
+    }else{stop("type must be either coxph, logisitc, linear, coxbox, crr (or NULL)")
+    }}else
+    {if(length(response)==2) {
+      if(length(unique(data[,response[2]]))<3){type<-"coxph"
+      }else{type<-"crr"}
+      beta<-"HR(95%CI)"        
+    }else if (length(unique(data[,response] ))==2) {type<-"logistic"
+                                            beta<-"OR(95%CI)"                                            
+    }else {type<-"linear"
+           beta<-"Estimate(95%CI)"
+    }
+    }
+  if(strata!="" & type!="coxph") stop("strata can only be used with coxph")
+  
+  
+  
   out<-lapply(covs,function(cov){
     cov2<-cov
     if(testing) print(cov)
@@ -307,11 +407,18 @@ uvsum<-function(data,response,covs,type,boxcox=F,strata=1,markup=T,sanitize=T,ni
       title<-NULL
       body<-NULL
       if(type=="coxph"){
-        m2<-coxph(as.formula(paste(paste("Surv(",response[1],",",response[2],")",sep=""),"~",cov2,ifelse(strata=="","","+"),paste(strata,collapse="+"),sep="")),data=data)  
-        
+        m2<-coxph(as.formula(paste(paste("Surv(",response[1],",",response[2],")",sep=""),"~",cov2,ifelse(strata=="","","+"),paste(strata,collapse="+"),sep="")),data=data)        
         hazardratio<-c("Reference",apply(matrix(summary(m2)$conf.int[,c(1,3,4)],ncol=3),1,psthr))    
         pvalue<-c("",sapply(summary(m2)$coef[,5],lpvalue))
         title<-c(cov,"","",lpvalue(summary(m2)$waldtest[3]))
+      }else if(type=="crr"){        
+        m2<-crrRx(as.formula(paste(paste(response,collapse="+"),"~",cov2,sep="")),data=data)        
+        hazardratio<-c("Reference",apply(matrix(summary(m2)$conf.int[,c(1,3,4)],ncol=3),1,psthr))    
+        pvalue<-c("",sapply(summary(m2)$coef[,5],lpvalue))        
+        globalpvalue<-try(wald.test(b=m2$coef,Sigma=m2$var,Terms=seq_len(length(m2$coef)))$result$chi2[3]);
+        if(class(globalpvalue) == "try-error") globalpvalue<-"NA"
+        title<-c(cov,"","",lpvalue(globalpvalue))
+        
       }else if(type=="logistic"){
         m2<-glm(as.formula(paste(response,"~",cov2,sep="")),family="binomial",data=data)   
         #globalpvalue<-1-pchisq(2*(summary(m2)$null.deviance-summary(m2)$deviance),summary(m2)$df.null-summary(m2)$df.residual)
@@ -323,9 +430,10 @@ uvsum<-function(data,response,covs,type,boxcox=F,strata=1,markup=T,sanitize=T,ni
         pvalue<-c("",sapply(m[-1,4],lpvalue))
         title<-c(cov,"","",lpvalue(globalpvalue))
         
-      }else if(type=="linear"){
-        if(!boxcox){m2<-lm(as.formula(paste(response,"~",cov2,sep="")),data=data)
-        }else{m2<-boxcoxlm(data[,response],data[,cov2])[[1]]}
+      }else if(type=="linear"|type=="boxcox"){
+        
+        if(type=="linear"){m2<-lm(as.formula(paste(response,"~",cov2,sep="")),data=data)
+        }else{m2<-boxcoxfitRx(as.formula(paste(response,"~",cov2,sep="")),data=data)}
         m<-summary(m2)$coefficients
         #globalpvalue<-anova(m2)[5][[1]][1])
         globalpvalue<-try(wald.test(b=m2$coefficients[-1],Sigma=vcov(m2)[-1,-1],Terms=seq_len(length(m2$coefficients[-1])))$result$chi2[3]);
@@ -349,9 +457,15 @@ uvsum<-function(data,response,covs,type,boxcox=F,strata=1,markup=T,sanitize=T,ni
     {
       cov<-lbld(sanitizestr(nicename(cov)))
       if(type=="coxph"){
-        m2<-coxph(as.formula(paste(paste("Surv(",response[1],",",response[2],")",sep=""),"~",cov2,ifelse(strata=="","","+"),paste(strata,collapse="+"),sep="")),data=data)  
-        
+        m2<-coxph(as.formula(paste(paste("Surv(",response[1],",",response[2],")",sep=""),"~",cov2,ifelse(strata=="","","+"),paste(strata,collapse="+"),sep="")),data=data)        
         out<-matrix(c(cov,psthr(summary(m2)$conf.int[,c(1,3,4)]),"",lpvalue(summary(m2)$waldtest[3])),ncol=4)
+        
+      }else if(type=="crr"){
+        
+        m2<-crrRx(as.formula(paste(paste(response,collapse="+"),"~",cov2,sep="")),data=data)
+        globalpvalue<-try(wald.test(b=m2$coef,Sigma=m2$var,Terms=seq_len(length(m2$coef)))$result$chi2[3]);
+        if(class(globalpvalue) == "try-error") globalpvalue<-"NA"
+        out<-matrix(c(cov,psthr(summary(m2)$conf.int[,c(1,3,4)]),"",lpvalue(globalpvalue)),ncol=4)
         
       }else if(type=="logistic"){
         m2<-glm(as.formula(paste(response,"~",cov2,sep="")),family="binomial",data=data)    
@@ -365,9 +479,9 @@ uvsum<-function(data,response,covs,type,boxcox=F,strata=1,markup=T,sanitize=T,ni
         out<-matrix(c(cov,psthr(c(exp(m[-1,1]),exp(m[-1,1]-1.96*m[-1,2]),exp(m[-1,1]+1.96*m[-1,2]))),"",lpvalue(globalpvalue)),ncol=4)
         
         
-      }else if(type=="linear"){
-        if(!boxcox){m2<-lm(as.formula(paste(response,"~",cov2,sep="")),data=data)
-        }else{m2<-boxcoxlm(data[,response],data[,cov2])[[1]]}
+      }else if(type=="linear"|type=="boxcox"){
+        if(type=="linear"){m2<-lm(as.formula(paste(response,"~",cov2,sep="")),data=data)
+        }else{m2<-boxcoxfitRx(as.formula(paste(response,"~",cov2,sep="")),data=data)}
         #globalpvalue<-anova(m2)[5][[1]][1])
         globalpvalue<-try(wald.test(b=m2$coefficients[-1],Sigma=vcov(m2)[-1,-1],Terms=seq_len(length(m2$coefficients[-1])))$result$chi2[3]);
         if(class(globalpvalue) == "try-error") globalpvalue<-"NA"
@@ -379,28 +493,45 @@ uvsum<-function(data,response,covs,type,boxcox=F,strata=1,markup=T,sanitize=T,ni
       }
       return(list(out,nrow(out)))}})
   table<-lapply(out,function(x){return(x[[1]])})
-  table<-do.call(rbind.data.frame, table)  
-  colnames(table)<-sapply(c("Covariate",sanitizestr(beta),"p-value","Global p-value"),lbld)
-  return(table)
+  table<-do.call("rbind", lapply(table, data.frame, stringsAsFactors = FALSE))
   
-  index<-unlist(lapply(out,function(x){return(x[[2]])}))  
-  lineindex<-rep(-1,length(index))
-  for(i in 1:length(index)){lineindex[i]<-sum(index[c(1:i)])}
-  lineindex<-c(-1,0,lineindex)
-  if(output=="latex") return(list(table,lineindex))
-  else return(table)
+  colnames(table)<-sapply(c("Covariate",sanitizestr(beta),"p-value","Global p-value"),lbld)
+  return(table)  
 }
 
-puvsum<-function(data,response,covs,type,boxcox=F,strata=1,latex=F){
-  if(!latex){
-    print.xtable(xtable(uvsum(data,response,covs,type,boxcox,strata)),include.rownames=F,sanitize.text.function=identity,table.placement="H")
+#'Print univariate summary LaTeX table
+#'
+#'Returns a LaTeX table of the univariate summary
+#'
+#'@param response string vector with name of response 
+#'@param covs character vector with the names of columns to fit univariate models to
+#'@param data dataframe containing data
+#'@param type string indicating he type of univariate model to fit. The function will try and guess what type you want based on your response. If you want to override this you can manually specify the type. Options in clude "linear", "logistic", "coxph", "crr", "boxcox","logistic"
+#'@param strata character vector of covariates to stratify by. Only used for coxph and crr
+#'@param TeX boolean indicating if you want to be able to view extra long tables in the LaTeX pdf. If TeX is T then the table will not convert properly to docx
+#'@keywords dataframe
+#'@export
+puvsum<-function(response,covs,data,type=NULL,strata=1,TeX=F){
+  if(!TeX){
+    print.xtable(xtable(uvsum(response,covs,data,type,strata)),include.rownames=F,sanitize.text.function=identity,table.placement="H")
   }else{
-    print.xtable(xtable(uvsum(data,response,covs,type,boxcox,strata)),include.rownames=F,sanitize.text.function=identity,table.placement="H",floating=FALSE,tabular.environment="longtable")
+    print.xtable(xtable(uvsum(response,covs,data,type,strata)),include.rownames=F,sanitize.text.function=identity,table.placement="H",floating=FALSE,tabular.environment="longtable")
   }
   
 }
 
-mvsum<-function(data,model,type,markup=T,sanitize=T,nicenames=T){
+#'Get multivariate summary dataframe
+#'
+#'Returns a dataframe corresponding to a univariate table
+#'
+#'@param model fitted model object
+#'@param data dataframe containing data
+#'@param markup boolean indicating if you want latex markup
+#'@param sanitize boolean indicating if you want to sanitize all strings to not break LaTeX
+#'@param nicenames booling indicating if you want to replace . and _ in strings with a space
+#'@keywords dataframe
+#'@export
+mvsum<-function(model,data,markup=T,sanitize=T,nicenames=T){
   if(!markup){
     lbld<-identity
     addspace<-identity
@@ -412,23 +543,26 @@ mvsum<-function(data,model,type,markup=T,sanitize=T,nicenames=T){
   call<-paste(deparse(summary(model)$call),collapse="")
   call<-unlist(strsplit(call,"~",fixed=T))[2]
   call<-unlist(strsplit(call,",",fixed=T))[1]
+  if(substr(call,nchar(call),nchar(call))=="\"") call<-substr(call,1,nchar(call)-1)
+  call<-unlist(strsplit(call,"\"",fixed=T))[1]  
   call<-unlist(strsplit(call,"+",fixed=T))
   call<-unlist(strsplit(call,"*",fixed=T))
   call<-unique(call)
   call<-call[which(is.na(sapply(call,function(cov){charmatch("strata(",cov)}))==T)]
   call<-gsub("\\s","", call)
-  betanames<-attributes(summary(model)$coefficients)$dimnames[[1]]
-  if(type=="linear"){
-    betanames<-betanames[-1]
-    beta<-"Estimate(95%CI)"    
-  }else if(type=="logistic"){
-    betanames<-betanames[-1]
-    beta<-"OR(95%CI)"  
-  }else if (type=="coxph"){
-    beta<-"HR(95%CI)"
-  }else{
-    return("type must be linear, logistic, or coxph")
-  }
+  betanames<-attributes(summary(model)$coef)$dimnames[[1]]
+    type<-class(model)[1]  
+  
+  
+ 
+    if(type=="glm"){ beta<-"OR(95%CI)"
+                          betanames<-betanames[-1]
+    }else if(type=="lm"|type=="lm"){ beta<-"Estimate(95%CI)"
+                              betanames<-betanames[-1]
+    }else if(type=="coxph"|type=="crr"){beta<-"HR(95%CI)"
+    }else{ stop("type must be either coxph, logisitc, lm, crr, lm (or NULL)")}
+    
+
   
   indx<-as.vector(sapply(betanames,function(string){
     
@@ -442,14 +576,14 @@ mvsum<-function(data,model,type,markup=T,sanitize=T,nicenames=T){
     return(-1)
   }))
   
-  if(min(indx)==-1) return("error") 
+  if(min(indx)==-1) stop("Factor name + level name is the same as another factor name. Please change. Will fix this issue later") 
   
   
   
   
   
   y<-betaindx(indx)
-  if(type%in%c("linear","logistic")){
+  if(type%in%c("lm","glm","lm")){
     y<-lapply(y,function(x){ x+1})
     betanames<-c("intercept",betanames)
   }
@@ -471,20 +605,25 @@ mvsum<-function(data,model,type,markup=T,sanitize=T,nicenames=T){
     reference=NULL
     title=NULL
     body=NULL
-    
-    globalpvalue<-try(wald.test(b=coef(model)[covariateindex],Sigma=vcov(model)[covariateindex,covariateindex],Terms=seq_along(covariateindex))$result$chi2[3]);
-    if(class(globalpvalue) == "try-error") globalpvalue<-"NA"
+    if(type!="crr"){
+      globalpvalue<-try(wald.test(b=coef(model)[covariateindex],Sigma=vcov(model)[covariateindex,covariateindex],Terms=seq_along(covariateindex))$result$chi2[3]);
+    }else{
+      globalpvalue<-try(wald.test(b=model$coef[covariateindex],Sigma=model$var[covariateindex,covariateindex],Terms=seq_along(covariateindex))$result$chi2[3]);
+      
+    }
+      if(class(globalpvalue) == "try-error") globalpvalue<-"NA"
     globalpvalue<-lpvalue(globalpvalue)
     
-    if(type=="coxph"){
+    if(type=="coxph"|type=="crr"){
       hazardratio<-c(apply(matrix(summary(model)$conf.int[covariateindex,c(1,3,4)],ncol=3),1,psthr))
       pvalues<-c(sapply(summary(model)$coef[covariateindex,5],lpvalue))
-    }else if (type=="logistic"){
+
+    }else if (type=="glm"){
       m<-summary(model)$coefficients      
       hazardratio<-apply(cbind(exp(m[covariateindex,1]),exp(m[covariateindex,1]-1.96*m[covariateindex,2]),
                                exp(m[covariateindex,1]+1.96*m[covariateindex,2])),1,psthr)        
       pvalues<-c(sapply(m[covariateindex,4],lpvalue))
-    }else if (type=="linear"){
+    }else if (type=="lm"|type=="lm"){
       m<-summary(model)$coefficients      
       
       hazardratio<-apply(cbind(m[covariateindex,1],m[covariateindex,1]-1.96*m[covariateindex,2],
@@ -525,21 +664,38 @@ mvsum<-function(data,model,type,markup=T,sanitize=T,nicenames=T){
     colnames(out)<-NULL
     return(list(out,nrow(out)))
   })
+    
   table<-lapply(out,function(x){return(x[[1]])})
   index<-unlist(lapply(out,function(x){return(x[[2]])}))  
-  table<-do.call(rbind.data.frame, table)
+  table<-do.call("rbind", lapply(table, data.frame, stringsAsFactors = FALSE))
+  
   colnames(table)<-sapply(c("Covariate",sanitizestr(beta),"p-value","Global p-value"),lbld)
-  return(table)
-  lineindex<-rep(-1,length(index))
-  #for(i in 1:length(index)){lineindex[i]<-sum(index[c(1:i)])}
-  #lineindex<-c(-1,0,lineindex)
-  if(output=="latex") return(list(table,index))
-  else return(table)  
+  return(table)   
 }
 
-pmvsum<-function(data,model,type){
-  print.xtable(xtable(mvsum(data,model,type)),include.rownames=F,sanitize.text.function=identity,table.placement="H")
+#'Print multivariate summary LaTeX table
+#'
+#'Returns a LaTeX table of the multivariate summary.
+#'
+#'@param model fitted model object
+#'@param data dataframe containing data
+#'@keywords print
+#'@export
+
+pmvsum<-function(model,data){
+  print.xtable(xtable(mvsum(model,data)),include.rownames=F,sanitize.text.function=identity,table.placement="H")
 }
+
+#' Convert .TeX to .docx
+#' 
+#' Covertes the knitr-compiled .TeX file to a .docx file
+#' 
+#' @param dir full path of .TeX file directory
+#' @param fname .TeX file file name. Do not include extension
+#' @param pdwd full path to pandoc
+#' @param imwd full path to image magick. Only include if there is at least one graphic.
+#' @keywords print
+#' @export
 
 makedocx<-function(dir,fname,pdwd,imwd=""){
   oldwd<-getwd()
@@ -555,117 +711,148 @@ makedocx<-function(dir,fname,pdwd,imwd=""){
   setwd(oldwd)
 }
 
-bwselect<-function(data,response,covs,strata=1,type,force=NULL,p=0.05,test=F,boxcox=F){
-  while(T){
-    
-    if(type=="logistic"){
-      pvalues<-sapply(covs,function(cov){
-        m0<-glm(as.formula(paste(response,"~",paste(covs,collapse="+"),sep="")),
-                data=subset(data,!is.na(data[,cov])),family="binomial")
-        m1<-update(m0,as.formula(paste(".~.-",cov,sep="")))
-        1-pchisq(summary(m1)$deviance-summary(m0)$deviance,
-                 summary(m1)$df.residual-summary(m0)$df.residual)
-      })          
-      if(test) print(pvalues)
-      if(length(covs)==1){
-        if(max(pvalues)>p){
-          return(glm(as.formula(paste(response,"~1",sep="")),
-                     data=data,family="binomial"))
-        }else{
-          return(glm(as.formula(paste(response,"~",paste(covs,collapse="+"),sep="")),
-                     data=data,family="binomial"))
-        }}else{
-          if(max(pvalues)>p){
-            covs<-covs[-which.max(pvalues)]
-          }else{
-            return(glm(as.formula(paste(response,"~",paste(covs,collapse="+"),sep="")),
-                       data=data,family="binomial"))
-          }}
-    }else if(type=="linear"){
-      pvalues<-sapply(covs,function(cov){
-        if(!boxcox){
-          m0<-lm(as.formula(paste(response,"~",paste(covs,collapse="+"),sep="")),
-                 data=subset(data,!is.na(data[,cov])))
-          m1<-update(m0,as.formula(paste(".~.-",cov,sep="")))
-        }else{
-          m0<-boxcoxlm(data[,response],data[,covs])[[1]]
-          m1<-boxcoxlm(data[!is.na(data[,cov]),response],data[!is.na(data[,cov]),setdiff(covs,cov)])[[1]]
-        }
-        1-pchisq(2*(logLik(m0)-logLik(m1)),
-                 summary(m0)$df[1]-summary(m1)$df[1])
-      })          
-      if(test) print(pvalues)
-      if(length(covs)==1){
-        if(max(pvalues)>p){
-          return(lm(as.formula(paste(response,"~1",sep="")),
-                    data=data))
-        }else{
-          return(lm(as.formula(paste(response,"~",paste(covs,collapse="+"),sep="")),
-                    data=data))
-        }}else if(length(covs)==2 & boxcox & max(pvalues)>p){
-          return(boxcoxlm(data[,response],data[,covs[which.min(pvalues)]]))
-          
-        }
-      else{
-        if(max(pvalues)>p){
-          covs<-covs[-which.max(pvalues)]
-        }else{
-          if(!boxcox){
-            return(lm(as.formula(paste(response,"~",paste(covs,collapse="+"),sep="")),
-                      data=data))
-          }else{
-            return(boxcoxlm(data[,response],data[,covs]))
-          }
-        }}}
-    
-  }}
 
-boxcoxlm<-function(y,x){
-  require(geoR)
-  missing<-unique(unlist(lapply(data.frame(y,x),function(xx) which(is.na(xx)))))
-  notmissing<-setdiff(seq_len(length(y)),missing)
-  a<-y[notmissing]
-  if(class(x)=="data.frame"){
-    b<-x[notmissing,]
-    b<-sapply(b,function(bb){
-      if(is.factor(bb)){
-        bb<-as.numeric(bb)-1  
-        if(length(table(bb))>=3){
-          bb<-as.matrix(model.matrix(~factor(bb)-1)[,-1])
-        }}
-      return(bb)})
-    if(class(b)=="list"){
-      b<-as.matrix(do.call(cbind.data.frame, b))
+#'Plot CI curve
+#'
+#'Plots a CI curve. Currently not very powerful. Only plots a single curve
+#'
+#'@param data dataframe containing data
+#'@param response character vector or list of character vector. If a list it plot the '1' event for all outcomes on 
+#'the same plot 
+#'@param group string of the group want to stratify by
+#'@param units units of time
+#'@param main String corresponding to title
+#'@param CI Bool If True will plot CI and only the '1' event. if F will plot all events except for the final one
+#'@param xlim numeric vector corresponding to xlimits. Default is NULL
+#'@param outcomes character vector of the names of the different competing outcomes 
+#'@keywords print
+#'@export
+
+plotci<-function (data, response, group=NULL, units = "months",main="Viral Infections",CI=F,xlim=NULL,outcomes=NULL){
+  if(!is.null(group)){
+    groups=levels(data[,group])
+  }
+  #If response is a list plot the '1' event for all outcomes on same plot
+  if(class(response)!="list"){
+    if(!is.null(group)){
+      groups=levels(data[,group])
+      fita <- cuminc(data[, response[1]], data[, response[2]],data[,group])
     }else{
-      b<-as.matrix(b)
-    }}
-  else{
-    b<-x[notmissing]
-    if (is.factor(b)) {
-      b <- as.numeric(b) - 1
-      if (length(table(x)) >= 3) {
-        b <- as.matrix(model.matrix(~factor(b) - 1)[, -1])
+      fita <- cuminc(data[, response[1]], data[, response[2]])
+    }
+    if(CI){
+      plot(fita[[1]]$time, sapply(fita[[1]]$est + 1.96 * sqrt(fita[[1]]$var), 
+                                  function(x) min(x, 1)), type = "l", lty = 2, main = paste("CI plot for ", 
+                                 sanitizestr(nicename(response[2])), sep = ""), xlab = paste("Time (", 
+                                 cap(units), ")", sep = ""), ylim = c(0, 1), ylab = paste("Incidence of ",                                                                                                                                                                                                                
+                                 sanitizestr(nicename(response[2])), sep = ""),xlim=xlim)
+      
+      lines(fita[[1]]$time, fita[[1]]$est)
+      lines(fita[[1]]$time, sapply(fita[[1]]$est - 1.96 * sqrt(fita[[1]]$var), 
+                                   function(x) max(x, 0)), lty = 2)
+    }else{
+      plot(fita[[1]]$time, fita[[1]]$est, 
+           type = "l",  main = paste("CI plot for ", 
+                                     sanitizestr(nicename(response[2])), sep = ""), xlab = paste("Time (", 
+                                     cap(units), ")", sep = ""), ylim = c(0, 1), ylab = paste("Incidence of ", 
+                                     sanitizestr(nicename(response[2])), sep = ""),xlim=xlim)
+      numoutcomes<-length(fita)-1
+      if(numoutcomes>1){
+        for (i in 2:numoutcomes){
+          lines(fita[[i]]$time,fita[[i]]$est,lty=i,lwd=2)
+        }
+        legend("topleft", outcomes, lty = 1:numoutcomes, bty = "n",lwd=2)  
       }
     }
-    b<-as.matrix(b)   
+    
+  }else{
+    d<-lapply(response,function(respons){
+      fita <- cuminc(data[, respons[1]], data[, respons[2]])
+      list(fita[[1]]$time, fita[[1]]$est)})
+    if(is.null(xlim)) xlim=c(0,ceiling(max(sapply(d,function(x) max(x[[1]])))))
+    plot(1,type="n",xlim=xlim,ylim=c(0,1),
+         ylab="Cumulative Incidence",xlab = paste("Time (",cap(units), ")", sep = ""),main=paste("Cumulative Incidence plot for",main))
+    for(i in 1:length(d)){
+      lines(d[[i]][[1]],d[[i]][[2]],lty=i,lwd=2)
+    }
+    legend("topleft", sapply(response,function(x) x[2]) , col =rep(1, length(response)), lty = 1:length(response), bty = "n",lwd=2)  
+    
   }
-  
-  
-  
-  
-  lambda<-unlist(unlist(boxcoxfit(a,b,lambda2=T))[1:2])                     
-  a<-((a+lambda[2])^lambda[1]-1)/lambda[1]
-  out<-lm(a~b)
-  return(list(out,lambda))
 }
 
-plotci<-function(data,response,units="months"){
-  fita<-cuminc(data[,response[1]],data[,response[2]])
-  plot(fita[[1]]$time,sapply(fita[[1]]$est+1.96*sqrt(fita[[1]]$var),function(x) min(x,1)),
-       type="l",lty=2,main=paste("CI plot for ",sanitizestr(nicename(response[2])),sep=""),
-       xlab=paste("Time (",cap(units),")",sep=""), ylim=c(0,1),
-       ylab=paste("Incidence of ",sanitizestr(nicename(response[2])),sep=""))
-  lines(fita[[1]]$time,fita[[1]]$est)
-  lines(fita[[1]]$time,sapply(fita[[1]]$est-1.96*sqrt(fita[[1]]$var),
-                              function(x)max(x,0)),lty=2)
+
+
+
+#' Get CI cinfidence interval
+#' 
+#' Returns the confidence interval of a CI at a specified time. Currently not very powerful. Only works on single strata.
+#' 
+#' @param data dataframe containing data
+#' @param response character vector of response
+#' @param times numeric vector specifying single time to get CI for
+#' @param units string specifying the unit of times
+#' @param outcomes character vector specifying names of competing outcomes.
+#' Leave NULL if there is only one outcome
+#' @keywords print
+#' @export
+citime<-function (data, response, times, units="Years",outcomes=NULL) 
+{
+  out<-sapply(times,function(time){
+    fita <- cuminc(data[, response[1]], data[, response[2]])
+    numoutcomes<-length(fita)-1
+    sapply(1:numoutcomes,function(i){
+      index <- max(which(fita[[i]]$time <= time))
+      est <- fita[[i]]$est[index]
+      pm <- 1.96 * sqrt(fita[[i]]$var[index])
+      psthr(c(est, max(est - pm, 0), min(est + pm, 1)))
+    })
+  })
+  if (class(out)!="matrix")
+    out<-t(out)
+  out<-data.frame(out,stringsAsFactors=F)
+  rownames(out)<-NULL
+  if(!is.null(outcomes)){
+    out<-cbind(outcomes,out)
+    colnames(out)<-c("Outcome",paste(times,units))
+  }else{
+    colnames(out)<-paste(times,units)
+  }
+  return(out)
+}
+
+
+#' Create a forrest plot
+#' 
+#' Create a forrest plot. All entires with cutoff=T will be plotted with an NA
+#' rather than their original value.
+#' 
+#' @param data dataframe containing data
+#' @param xlab String corresponding to xlabel. By default is set to names(data)[2]
+#' @param ylab String corresponding to ylabel. By default is set to names(data)[1]
+#' @param main String corresponding to main title. By default is set to "Forest plot for subgroup analysis"
+#' @param space numeric corresponding to offset of y label. Should be positive if y label is on top of the names of the y axis
+#' @param bool A boolean vector. All entries with T will be invisible in the plot
+#' @param xlim vector of length 2 corresponding to limits of x-axis. Default to NULL.
+#' @keywords print
+#' @export
+forestplot<-function (data, xlab = NULL, ylab = NULL, main = NULL, space = 0, bool=F,xlim=NULL) 
+{
+  if (is.null(xlab)) 
+    xlab <- names(data)[2]
+  if (is.null(ylab)) 
+    ylab <- names(data)[1]
+  if (is.null(main)) 
+    main <- "Forest plot for subgroup analysis"
+  par(oma = c(0, space, 0, 0))
+  l1 <- nrow(data)
+  colors<- ifelse(bool,"white","black")
+  if(is.null(xlim)) xlim<-c(0,max(data[!bool, 4]))
+  plot(data[, 2], c(1:l1), col = colors, pch = "|", bg = colors, 
+       yaxt = "n", xlim = xlim, ylab = "", xlab = "", 
+       main = main)
+  abline(v = 1, col = "red", lty = 2)
+  segments(data[, 3], c(1:l1), data[, 4], c(1:l1),col=colors)
+  axis(2, at = c(1:l1), labels = data[, 1], las = 1, cex.axis = 0.8)
+  mtext(side = 1, xlab, line = 2)
+  mtext(side = 2, ylab, line = space + 2.5)
 }

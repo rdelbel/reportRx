@@ -1,4 +1,5 @@
 \documentclass{article}
+\usepackage{multirow}
 \setlength\parindent{0pt}
 \usepackage{geometry}
 \usepackage{longtable}
@@ -14,7 +15,7 @@
 
 
 %Change title here
-\title{reportRx}
+\title{reportRx Template}
 %Change Author here
 \author{Ryan Del Bel}
 
@@ -22,30 +23,17 @@
 \maketitle
 
 <<,include=FALSE>>=
-require(survival)
-require(reshape)
-require(xtable)
-require(aod)
-require(geoR)
 require(reportRx)
 @
 
 <<,include=FALSE>>=
-#TeX<-T if want latex file, TeX=F if want docx as final result
-#TeX<-
+#TeX<-T if final result is LaTeX file. Tex<-F if final result is .docx
+TeX<-F
 
 #load your data and call it data
 #data<-read.csv() or read.table()
-#data<-
+data<-
 
-#Write which models you want to fit for  each outcome in a vector
-#choies are "linear", "coxph", "logistic"
-#i.e. type<-c("coxph","linear","linear","logistic)
-#type<-"coxph"
-
-#make boxcox true if want boxcox transformation for linear model, false otherwise.
-#need to make boxcox<-F even if not using linear model.
-#boxcox<-F 
 
 #Give the names of your event time and indicator here
 #if coxph make a list of vectors,
@@ -53,7 +41,7 @@ require(reportRx)
 #response<-list(c("ETname1","EIname1"),
 #           ...
 #      c("ETnamen","EInamen"))
-#response<-
+response<-
 
 #Write the column name of k-m stratification variable
 #if one exists. Leave 1 if does not exist.
@@ -79,7 +67,6 @@ require(reportRx)
 #The unit of time your outcome is in. If not months 
 #write the unit here. Use lower case and plural.
 #units<-"months"
-#only required for coxph
 #units<-
 
 
@@ -89,19 +76,16 @@ require(reportRx)
 #                ...
 #            c(time1,time2,...))
 # only required for coxph
-#times<-
+times<-
 
 #Write the names of the covariates you want to have in the descrpitive table
 #covs<-names(data)[c(covindex)] or c("covname1","covname2",...)
-#covs<-
+covs<-
 
 #Write the name of the covariate you want to stratify by in the
-#descriptive table. Currently only one with 2 levels is supported.
-#Also you must pick a covariate. If you dont want one you can
-#Just delete the unwanted columns at the end. This will be fixed
-#In future versions
+#descriptive table. Leave NULL if dont want to stratify
 #maincov<-"maincovname"
-#maincov<-
+maincov<-NULL
 
 #If some of your covariates are only defined on a subset of people
 #Then write the number of people you expect to have the covariate
@@ -117,7 +101,8 @@ require(reportRx)
 @
 
 \section*{1 Clinical Summary}
-%Write introduction here
+
+Write introduction here
 
 \subsection*{1.1 Clinical Covariate Summary}
 <<,results='asis',echo=FALSE>>=
@@ -126,10 +111,10 @@ pcovsum(data,covs,maincov,numobs,latex=TeX)
 @
 
 
-%This section is only for coxph. If you dont have this section then 
-%you can remove it and change the numbering of the following sections.
+
 \section*{2 Event Outcome Summary}
-%Write outcome definitions here
+
+Write outcome definitions here
 
 
 <<,results='asis',echo=FALSE,warning=FALSE,message=FALSE,fig.width=4.5,fig.height=4.5,fig.show='asis',fig.align='center',dpi=144>>=
@@ -149,7 +134,7 @@ cat("\\newpage")
 <<,echo=FALSE,results='asis',warning=FALSE>>=
   for(i in 1:length(response)){
     cat(paste("\\subsection*{3.",i," ",response[[i]][length(response[[i]])],"}",sep=""),"\n")
-    puvsum(data,response[[i]],uvcovs[[i]],model,type[i],boxcox,uvstrata,latex=TeX)
+    puvsum(response[[i]],uvcovs[[i]],data,strata=uvstrata,latex=TeX)
     
   }
 @
@@ -161,9 +146,13 @@ cat("\\newpage")
     cat(paste("\\subsection*{4.",i," ",response[[i]][2],"}",sep=""),"\n")
     for(j in seq_len(length(mvm[[i]]))){
       cat(paste("\\subsubsection*{4.",i,".",j, " Model ",j,": n=",summary(mvm[[i]][[j]])$n,sanitizestr(", #Events="),summary(mvm[[i]][[j]])$nevent,"}",sep=""))
-      pmvsum(data,mvm[[i]][[j]],type[i])
+      pmvsum(mvm[[i]][[j]],data)
     }
   }
 @
 
+
+<<,include=FALSE>>=
+#makedocx<-
+@
 \end{document}

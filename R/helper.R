@@ -1,5 +1,29 @@
+#' Paste with parentheses
+#' 
+#' Paste with parentheses
+#' 
+#' @param x a vector
+#'@keywords helper
+#'@export
+#'@examples
+#'pstprn(c(1,2,3,4,5))
+#'pstprn(c("Hello","Hi",2))
 pstprn<-function(x){paste(x[1]," (",paste(x[-1],collapse=","),")",sep="")}
-psthr<-function(x,y=2){paste(round(x[1],y)," (",round(x[2],2),",",round(x[3],2),")",sep="")}
+
+#' Round and paste with parentheses
+#' 
+#' Round and paste with parentheses
+#' 
+#' @param x a numeic vector
+#' @param y integer corresponding to the number of digits to round by
+#'@keywords helper
+#'@export
+#'@examples
+#'psthr(c(1.111111,2.2222222,3.333333))
+psthr<-function(x,y=2){
+  x<-round(x,y)
+  pstprn(x)
+}
 covnm<-function(betanames,call){
   sapply(betanames,function(betaname){
     
@@ -38,13 +62,25 @@ betaindx<-function(x){
   }
 }
 
-
+#' Capitalize a string
+#' 
+#' Calitalize a string
+#' 
+#' @param x string
+#' @keywords helper
+#' @export
 cap <- function(x) {
   s <- strsplit(x, " ")[[1]]
   paste(toupper(substring(s, 1, 1)), substring(s, 2),
         sep = "", collapse = " ")
 }
 
+#'Clean strings for printing
+#'
+#' Returns strings with . and _ replaced by a space. This is nice when printing column names of your dataframe in a report
+#' @param strings vector of strings to give a nice name
+#' @keywords helper
+#' @export
 nicename<-function(strings){
   out<-sapply(strings,function(x){
     x<-chartr(".", " ",x)
@@ -52,6 +88,13 @@ nicename<-function(strings){
     return(x)})
   return(out)
 }
+
+#' Formats p-values
+#' 
+#' Returns <0.001 if pvalue is <0.001. Else rounds the pvalue to 2 significant digits
+#' 
+#' @param x an integer
+#' @export
 pvalue<-function(x){
   if(is.na(x)|class(x)=="character") return(x)
   else if (x<=0.001) return("<0.001")
@@ -78,20 +121,41 @@ sanitize <- function(str) {
   return(result)
 }
 
+#' Sanitizes strings to not break LaTeX
+#' 
+#' Strings with special charaters will break LaTeX if returned 'asis' by knitr. This happens every time we use one of the main reportRx functions. We first sanitize our strings with this function to stop LaTeX from breaking.
+#'
+#'@param str a vector of strings to sanitize
+#'@export
 sanitizestr<-function(str){
   as.vector(sapply(str,function(char){sanitize(char)}))
 }
 
+#'Bold strings in LaTeX
+#'
+#'Bold strings in LaTeX.
+#'
+#'@param strings A vector of strings to bold.
+#'@export
 lbld<-function(strings){sapply(strings,function(x){
   if(is.null(x)) return(x)
   if(is.na(x)) return(x)
   return(paste("\\textbf{",x,"}",sep=""))})}
 
+#'Add spaces to strings in LaTeX
+#'
+#'Add spaces to strings in LaTeX. Returns appends ~~~ before the string
+#'
+#'@param x string
+#'@export
 addspace<-function(x){
   paste("~~~",x,sep="")
 }
-
-
+#' Formats p-values for LaTeX
+#' 
+#' Returns <0.001 if pvalue is <0.001. Else rounds the pvalue to 2 significant digits. Will bold the p-value if it is <= 0.05
+#' @param x an integer
+#' @export
 lpvalue<-function(x){
   if(is.na(x)|class(x)=="character") return(x)
   else if (x<=0.001) return("\\textbf{$<$0.001}")
@@ -100,32 +164,28 @@ lpvalue<-function(x){
   else return(x)
 }
 
-boxcoxlm<-function(y,x){
-  require(geoR)
-  missing<-unique(unlist(lapply(data.frame(y,x),function(xx) which(is.na(xx)))))
-  notmissing<-setdiff(seq_len(length(y)),missing)
-  a<-y[notmissing]
-  if(class(x)=="data.frame"){
-    b<-x[notmissing,]
-  }else{
-    b<-x[notmissing]
+
+
+removedollar<-function(x){
+  colnms<-strsplit(x,":")
+  indx<-unlist(lapply(colnms,function(colnm) sapply(colnm, function(coln) regexpr("$",coln,fixed=T)[1]+1)))
+  if(length(unique(indx))==1){
+    if(unique(indx)!=0) x<-unlist(lapply(colnms,function(colnm) paste(substring(colnm,indx[1]),collapse=":")))
   }
-  b<-sapply(b,function(bb){
-    if(is.factor(bb)){
-      bb<-as.numeric(bb)-1  
-      if(length(table(bb))>=3){
-        bb<-as.matrix(model.matrix(~factor(bb)-1)[,-1])
-      }}
-    return(bb)}
-  )
-  if(class(b)=="list"){
-    b<-as.matrix(do.call(cbind.data.frame, b))
-  }else{
-    b<-as.matrix(b)              
-  }
-  
-  lambda<-unlist(unlist(boxcoxfit(a,b,lambda2=T))[1:2])                     
-  a<-((a+lambda[2])^lambda[1]-1)/lambda[1]
-  out<-lm(a~b)
-  return(list(out,lambda))
+  return(x)  
 }
+
+modelmatrix<-function(f,data=NULL){
+  k<-as.character(f)
+  y<-NULL
+  if(!length(k)%in%c(2,3)) stop("formula not properly formed")
+  if(length(k)==3) {
+    f<-as.formula(paste("~",k[2],"+",k[3],sep=""))
+    y<-model.matrix(as.formula(paste("~",k[2],sep="")),data)[,-1,drop=F]}
+  x<-model.matrix(f,data)[,-1,drop=F]
+  colnames(x)<-removedollar(colnames(x))
+  if(!is.null(y)){
+    return(list(x[,1:ncol(y),drop=F],x[,(ncol(y)+1):ncol(x),drop=F]))
+  }else{
+    return(x)
+  }}
