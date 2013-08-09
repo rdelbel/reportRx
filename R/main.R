@@ -150,7 +150,11 @@ petsum<-function(data,response,group=1,times=c(12,14),units="months"){
   })
 }
 
+<<<<<<< HEAD
 covsum<-function(data,covs,maincov=NULL,numobs=NULL,markup=T,sanitize=T,nicenames=T){
+=======
+covsum<-function(data,covs,maincov,numobs=NULL,markup=T,sanitize=T,nicenames=T){
+>>>>>>> 069d7ed3d5af49f9b8d8fa8f020db5886132e74e
   
   if(!markup){
     lbld<-identity
@@ -159,19 +163,27 @@ covsum<-function(data,covs,maincov=NULL,numobs=NULL,markup=T,sanitize=T,nicename
   }
   if(!sanitize) sanitizestr<-identity  
   if(!nicenames) nicename<-identity
+<<<<<<< HEAD
   if(!is.null(maincov)){
+=======
+  
+>>>>>>> 069d7ed3d5af49f9b8d8fa8f020db5886132e74e
   levels<-names(table(data[,maincov]))
   levels<-c(list(levels),as.list(levels))
   }else{
     levels<-"NOMAINCOVNULLNA"
   }
   N=nrow(data)
+<<<<<<< HEAD
   if(!is.null(maincov)){
   nmaincov<-c(sum(table(data[,maincov])),table(data[,maincov]))
   }else{
     nmaincov<-N
     p<-NULL
   }
+=======
+  nmaincov<-c(sum(table(data[,maincov])),table(data[,maincov]))
+>>>>>>> 069d7ed3d5af49f9b8d8fa8f020db5886132e74e
   out<-lapply(covs,function(cov){
     ismiss=F
     n<-sum(table(data[,cov]))
@@ -184,22 +196,33 @@ covsum<-function(data,covs,maincov=NULL,numobs=NULL,markup=T,sanitize=T,nicename
     }
     #if the covariate is a factor
     if(is.factor(data[,cov])){
+<<<<<<< HEAD
       factornames<-c(levels(data[,cov]),factornames)
       if(!is.null(maincov)){
       p<-try(lpvalue(fisher.test(data[,maincov],data[,cov])$p.value))
       if(class(p)=="try-error") p<-chisq.test(data[,maincov],data[,cov])$p.value
       p<-lpvalue(p)
       } 
+=======
+      factornames<-c(levels(data[,cov]),factornames)    
+      p<-try(lpvalue(fisher.test(data[,maincov],data[,cov])$p.value))
+      if(class(p)=="try-error") p<-chisq.test(data[,maincov],data[,cov])$p.value
+      p<-lpvalue(p) 
+>>>>>>> 069d7ed3d5af49f9b8d8fa8f020db5886132e74e
         
       
       #set up the main columns
       onetbl<-mapply(function(sublevel,N){
         missing<-NULL
+<<<<<<< HEAD
        if(sublevel[1]!="NOMAINCOVNULLNA"){
         subdata<-subset(data,subset=data[,maincov]%in%sublevel)
         }else{
           subdata<-data
         }
+=======
+        subdata<-subset(data,subset=data[,maincov]%in%sublevel)
+>>>>>>> 069d7ed3d5af49f9b8d8fa8f020db5886132e74e
         table<-table(subdata[,cov])
         tbl<-table(subdata[,cov])
         n<-sum(tbl)
@@ -215,18 +238,28 @@ covsum<-function(data,covs,maincov=NULL,numobs=NULL,markup=T,sanitize=T,nicename
     }else{
       #setup the first column
       factornames<-c("Mean (sd)", "Median (Min,Max)",factornames)
+<<<<<<< HEAD
       if(!is.null(p)){
       p<-try(anova(lm(data[,cov]~data[,maincov]))[5][[1]][1])
       if(class(p)=="try-error") p<-NA
       p<-lpvalue(p)}
+=======
+      p<-try(anova(lm(data[,cov]~data[,maincov]))[5][[1]][1])
+      if(class(p)=="try-error") p<-NA
+      p<-lpvalue(p)
+>>>>>>> 069d7ed3d5af49f9b8d8fa8f020db5886132e74e
       
       
       #set up the main columns
       onetbl<-mapply(function(sublevel,N){
         missing<-NULL
+<<<<<<< HEAD
        if(sublevel[1]!="NOMAINCOVNULLNA"){
         subdata<-subset(data,subset=data[,maincov]%in%sublevel)
         }else{subdata<-data}
+=======
+        subdata<-subset(data,subset=data[,maincov]%in%sublevel)
+>>>>>>> 069d7ed3d5af49f9b8d8fa8f020db5886132e74e
         summary<-round(summary(subdata[,cov]),1)
         meansd<-paste(summary[4]," (", round(sd(subdata[,cov],na.rm=T),1),")",sep="")
         mmm<-paste(summary[3]," (",summary[1],",",summary[6],")",sep="")
@@ -246,26 +279,35 @@ covsum<-function(data,covs,maincov=NULL,numobs=NULL,markup=T,sanitize=T,nicename
     factornames<-addspace(sanitizestr(nicename(factornames)))    
     onetbl<-cbind(factornames,onetbl)
     
+<<<<<<< HEAD
     if(!is.null(maincov)){
       onetbl<-rbind(c(lbld(sanitizestr(nicename(cov))),rep("",length(levels[[1]])+1)),onetbl)
       onetbl<-cbind(onetbl,c(p,rep("",nrow(onetbl)-1)))
     }else{
       onetbl<-rbind(lbld(sanitizestr(nicename(cov))),onetbl)
     }
+=======
+    onetbl<-rbind(c(lbld(sanitizestr(nicename(cov))),rep("",length(levels[[1]])+1)),onetbl)
+    onetbl<-cbind(onetbl,c(p,rep("",nrow(onetbl)-1)))
+>>>>>>> 069d7ed3d5af49f9b8d8fa8f020db5886132e74e
     rownames(onetbl)<-NULL
     colnames(onetbl)<-NULL
     return(onetbl)})
   
   table<-do.call(rbind.data.frame, out)
+ 
   rownames(table)<-NULL
   if(!is.null(maincov)){
   colnames(table)<-c("Covariate",paste("Full Sample (n=",N,")",sep=""),
                      mapply(function(x,y){paste(x," (n=",y,")",sep="")},
                             names(table(data[,maincov])),table(data[,maincov])),"p-value (indep)")
+<<<<<<< HEAD
   }else{
     colnames(table)<-c("Covariate",paste("n=",N,")",sep=""))
     
   }
+=======
+>>>>>>> 069d7ed3d5af49f9b8d8fa8f020db5886132e74e
   return(table)
 }
 
