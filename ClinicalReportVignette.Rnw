@@ -11,8 +11,9 @@
 \begin{document}
 \maketitle
 
+We will briefly go over some of the main functions in reportRx.
 
-<<message=FALSE,include=FALSE,echo=FALSE>>=
+<<message=FALSE,include=FALSE,>>=
 #update/install package
 #devtools::install_github('reportRx','rdelbel')
 require(reportRx) # Load package
@@ -34,7 +35,7 @@ lung$catage<-factor(sapply(lung$age, function(x){ #Make a 3 level factor
 @
 
 \section{pcovsum}
-<<,results='asis',echo=FALSE>>=
+<<,results='asis',>>=
 #pcovsum has 3 main imputs, a dataframe, a vector of column names, and optionally
 #a single column name.
 pcovsum(lung,c("sex2","sex","age","ph.ecog","wt.loss"))
@@ -58,7 +59,7 @@ plotkm takes 2 main arguments, data, and response. optional argument group speci
 petsum summarizes our event time outcome. The main covariates are the data and response. We can also specify strata, times we want survival probabilities for, and units. This function does not return a table but rather paragraphs of text
 
 
-<<,results='asis',fig.align='center',fig.height=4,fig.width=6,message=FALSE,echo=FALSE>>=
+<<,results='asis',fig.align='center',fig.height=4,fig.width=6,message=FALSE,>>=
 #default time is months
 plotkm(lung,c("time","OS"))
 petsum(lung,c("time","OS"),times=100)
@@ -74,7 +75,7 @@ petsum(lung,c("time","OS"),"sex2",units="days",times=c(100,200,300))
 
 \section{puvsum}
 puvsum has 3 requred arguments. There are also other optional ones The first is the response, the second is the covariates,and the third is the data frame. The function will guess what type of model you want to fit. We can use an optional 4th argument to override this guess if we want which is explaiend below. The third element is the data frame. 
-<<,results='asis',message=F,echo=FALSE>>=
+<<,results='asis',message=F,>>=
 #Since the response has length 2 and OS only has 2 unique values this will fit coxoh
 puvsum(c("time","OS"),c("sex2","age","ph.ecog","wt.loss"),lung)
 #Since the response has length 2 and OS2 has more than2 unique values
@@ -107,7 +108,7 @@ boxcoxfitRx(formula,data)\\
  Surv object.\\
  Use <name of time column> + <name of status column> ~ as the left hand side. We will see examples of this below")}
 
-<<,echo=FALSE>>=
+<<,>>=
 #First lets try to fit models using these functions
 crrRx(time+OS~sex2*age,lung) 
 boxcoxfitRx(time~age*sex2,lung)
@@ -120,13 +121,13 @@ class(boxcoxfitRx(time~age*sex2,lung))
 
 
 There is also an optional 3rd argument to boxcoxfitRx. Set to TRUE it will make it return a list of length 2. THe first element will be the model, and the second element will be a vector corresponding to the lamda1 and lambda2 of the boxcox transformation. This is useful if you want to invert the link to get transformed confidence intervals.
-<<,echo=FALSE>>=
+<<,>>=
 boxcoxfitRx(time~age*sex2,lung,TRUE)
 @
 
 Now we can finally use pmvsum
 
-<<,results='asis',echo=FALSE>>=
+<<,results='asis',>>=
 pmvsum(crrRx(time+OS2~sex2*age+ph.ecog,lung),lung) ## competing risks
 pmvsum(coxph(Surv(time,OS)~sex*age,lung),lung) #coxph
 pmvsum(lm(time~sex2*ph.ecog,lung),lung) #lm
@@ -135,7 +136,7 @@ pmvsum(glm(sex2~catage*ph.ecog,family=binomial,data=lung),lung) #logistic
 @
 
 
-<<,echo=FALSE>>=
+<<,>>=
 #After the pdf is created we can go back to this file, fill in and uncomment
 #this code. If we have pandoc and imagemagick and ghostscript installed it will
 #convert the document to .docx 
