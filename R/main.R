@@ -749,12 +749,13 @@ makedocx<-function(dir,fname,pdwd,imwd=""){
 #'@param units units of time
 #'@param main String corresponding to title
 #'@param CI Bool If True will plot CI and only the '1' event. if F will plot all events except for the final one
+#'@param legpos string indicating which position to put legend choies are "topright" etc
 #'@param xlim numeric vector corresponding to xlimits. Default is NULL
 #'@param outcomes character vector of the names of the different competing outcomes 
 #'@keywords print
 #'@export
 
-plotci<-function (data, response, group=NULL, units = "months",main="Viral Infections",CI=F,xlim=NULL,outcomes=NULL){
+plotci<-function (data, response, group=NULL, units = "months",main="Viral Infections",CI=F,legpos="topleft",xlim=NULL,outcomes=NULL){
   if(!is.null(group)){
     groups=levels(data[,group])
   }
@@ -787,7 +788,7 @@ plotci<-function (data, response, group=NULL, units = "months",main="Viral Infec
         for (i in 2:numoutcomes){
           lines(fita[[i]]$time,fita[[i]]$est,lty=i,lwd=2)
         }
-        legend("topleft", outcomes, lty = 1:numoutcomes, bty = "n",lwd=2)  
+        legend(legpos, outcomes, lty = 1:numoutcomes, bty = "n",lwd=2)  
       }
     }
     
@@ -801,7 +802,7 @@ plotci<-function (data, response, group=NULL, units = "months",main="Viral Infec
     for(i in 1:length(d)){
       lines(d[[i]][[1]],d[[i]][[2]],lty=i,lwd=2)
     }
-    legend("topleft", sapply(response,function(x) x[2]) , col =rep(1, length(response)), lty = 1:length(response), bty = "n",lwd=2)  
+    legend(legpos, sapply(response,function(x) x[2]) , col =rep(1, length(response)), lty = 1:length(response), bty = "n",lwd=2)  
     
   }
 }
