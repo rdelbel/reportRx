@@ -65,10 +65,11 @@ plotkm<-function(data,response,group=1,pos="bottomleft",units="months",CI=F,lege
 #'etsum(lung,c("time","status"),sex,c(1,2,3))
 etsum<- function(data,response,group=1,times=c(12,24)){
   kfit<-summary(survfit(as.formula(paste("Surv(",response[1],",",response[2],")~",group,sep=""))  ,data=data))
+  maxtime=max(kfit$time)
+  times[times>maxtime]=maxtime
   kfit2<-summary(survfit(as.formula(paste("Surv(",response[1],",",response[2],")~",group,sep="")) ,data=data),times=times)
   tab<-as.data.frame(cbind(strata=as.character(kfit2$strata),times=kfit2$time,SR=paste(round(kfit2$surv*100,0)," (",round(kfit2$lower*100,0),"-",round(kfit2$upper*100,0),")",sep="")))
-  tbl<-kfit2$table    
-  
+  tbl<-kfit2$table
   if(class(group)!="numeric"){
     med=by(data,data[,group],function(x) median(x[,response[1]],na.rm=T))
     min=by(data,data[,group],function(x) min(x[,response[1]],na.rm=T))
@@ -118,6 +119,7 @@ etsum<- function(data,response,group=1,times=c(12,24)){
       names(tab)<-as.numeric(as.matrix(tab[1,]))
       tab<-tab[-1,]      
     }else{
+      print(tab)
       rownames(tab)<-NULL
       names(tab)[2]<-times
       tab<-tab[-1]
