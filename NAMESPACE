@@ -23,15 +23,9 @@ export(pstprn)
 export(puvsum)
 export(pvalue)
 export(remove_heterozygocity)
+export(remove_maf)
 export(remove_missing)
 export(remove_relatives)
 export(remove_sex_problems)
 export(sanitizestr)
 export(uvsum)
-import(survival,
-    xtable,
-    aod,
-    reshape,
-    cmprsk,
-    geoR,
-    stringr)

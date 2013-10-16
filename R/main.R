@@ -820,9 +820,10 @@ plotci<-function (data, response, group=NULL, units = "months",main="Viral Infec
 #' @param units string specifying the unit of times
 #' @param outcomes character vector specifying names of competing outcomes.
 #' Leave NULL if there is only one outcome
+#' @param decimals positive integer corresponding to the number of decimals 
 #' @keywords print
 #' @export
-citime<-function (data, response, times, units="Years",outcomes=NULL) 
+citime<-function (data, response, times, units="Years",outcomes=NULL,decimals=2) 
 {
   out<-sapply(times,function(time){
     fita <- cuminc(data[, response[1]], data[, response[2]])
@@ -831,7 +832,7 @@ citime<-function (data, response, times, units="Years",outcomes=NULL)
       index <- max(which(fita[[i]]$time <= time))
       est <- fita[[i]]$est[index]
       pm <- 1.96 * sqrt(fita[[i]]$var[index])
-      psthr(c(est, max(est - pm, 0), min(est + pm, 1)))
+      psthr(c(est, max(est - pm, 0), min(est + pm, 1)),decimals)
     })
   })
   if (class(out)!="matrix")

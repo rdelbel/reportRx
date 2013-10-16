@@ -3,8 +3,8 @@
 \title{Plot CI curve}
 \usage{
   plotci(data, response, group = NULL, units = "months",
-    main = "Viral Infections", CI = F, xlim = NULL,
-    outcomes = NULL)
+    main = "Viral Infections", CI = F, legpos = "topleft",
+    xlim = NULL, outcomes = NULL)
 }
 \arguments{
   \item{data}{dataframe containing data}
@@ -22,6 +22,9 @@
   \item{CI}{Bool If True will plot CI and only the '1'
   event. if F will plot all events except for the final
   one}
+
+  \item{legpos}{string indicating which position to put
+  legend choies are "topright" etc}
 
   \item{xlim}{numeric vector corresponding to xlimits.
   Default is NULL}

@@ -13,7 +13,7 @@
   for missing individuals. Default is 0.05}
 }
 \description{
-  First removed 100\% missing snps, then missing snps, then
+  First removed 100% missing snps, then missing snps, then
   issing idividuals.
 }
 \keyword{GWAS}

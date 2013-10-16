@@ -3,7 +3,7 @@
 \title{Get CI cinfidence interval}
 \usage{
   citime(data, response, times, units = "Years",
-    outcomes = NULL)
+    outcomes = NULL, decimals = 2)
 }
 \arguments{
   \item{data}{dataframe containing data}
@@ -18,6 +18,9 @@
   \item{outcomes}{character vector specifying names of
   competing outcomes. Leave NULL if there is only one
   outcome}
+
+  \item{decimals}{positive integer corresponding to the
+  number of decimals}
 }
 \description{
   Returns the confidence interval of a CI at a specified
