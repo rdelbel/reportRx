@@ -64,12 +64,28 @@ plotkm<-function(data,response,group=1,pos="bottomleft",units="months",CI=F,lege
 #'etsum(lung,c("time","status"))
 #'etsum(lung,c("time","status"),sex,c(1,2,3))
 etsum<- function(data,response,group=1,times=c(12,24)){
+  if(class(group)=="numeric"){
   kfit<-summary(survfit(as.formula(paste("Surv(",response[1],",",response[2],")~",group,sep=""))  ,data=data))
   maxtime=max(kfit$time)
   times[times>maxtime]=maxtime
   kfit2<-summary(survfit(as.formula(paste("Surv(",response[1],",",response[2],")~",group,sep="")) ,data=data),times=times)
   tab<-as.data.frame(cbind(strata=as.character(kfit2$strata),times=kfit2$time,SR=paste(round(kfit2$surv*100,0)," (",round(kfit2$lower*100,0),"-",round(kfit2$upper*100,0),")",sep="")))
   tbl<-kfit2$table
+  }else{
+    if(class(data[,group])!="factor")
+      stop("group variable must be factor or leave unspecified for no group")
+    tab<-lapply(levels(data[,group]),function(level){
+      subdata<-subset(data,data[,group]==level)
+      kfit<-summary(survfit(as.formula(paste("Surv(",response[1],",",response[2],")~",1,sep=""))  ,data=subdata))
+      maxtime=max(kfit$time)
+      times[times>maxtime]=maxtime
+      kfit2<-summary(survfit(as.formula(paste("Surv(",response[1],",",response[2],")~",1,sep="")) ,data=subdata),times=times)
+      list(cbind(strata=paste0(group,"=",level),times=kfit2$time,SR=paste(round(kfit2$surv*100,0)," (",round(kfit2$lower*100,0),"-",round(kfit2$upper*100,0),")",sep="")),kfit2$table)})
+    tbl=t(sapply(tab,"[[",2))
+    rownames(tbl)=sapply(levels(data[,group]),function(level)paste0(group,"=",level))    
+    tab=do.call(rbind.data.frame,lapply(tab,"[[",1))
+}
+  
   if(class(group)!="numeric"){
     med=by(data,data[,group],function(x) median(x[,response[1]],na.rm=T))
     min=by(data,data[,group],function(x) min(x[,response[1]],na.rm=T))
@@ -86,7 +102,9 @@ etsum<- function(data,response,group=1,times=c(12,24)){
       indx<-c(0,sapply(sort(as.numeric(names(tab)[-1])),function(x){which(as.numeric(names(tab)[-1])==x)}))+1
       tab<-tab[,indx]
       tab<-tab[c(2:length(tab),1)]
-    }else{tab<-tab[c(2,1)]}
+    }else{
+      return(tab)
+      tab<-tab[c(2,1)]}
     noeventsindx<-ifelse(length(which(tbl[,4]==0))!=0,
                          which(tbl[,4]==0),NA)
     if(!is.na(noeventsindx)){
@@ -119,7 +137,6 @@ etsum<- function(data,response,group=1,times=c(12,24)){
       names(tab)<-as.numeric(as.matrix(tab[1,]))
       tab<-tab[-1,]      
     }else{
-      print(tab)
       rownames(tab)<-NULL
       names(tab)[2]<-times
       tab<-tab[-1]
@@ -175,15 +192,20 @@ petsum<-function(data,response,group=1,times=c(12,14),units="months"){
     if(t[i,2]!=0){
       flet<-paste(" The first and last event times occurred at ",t[i,9],
                   " and ",t[i,10]," ",units," respectively. ",sep="")
-      if(ncol(t)>11+ofst){
-        ps<-paste("The ",paste(names[11:(ncol(t)-offset)], collapse=", ")," and ",names[ncol(t)-ofst], " " , substring(units,1,nchar(units)-1),
+      
+      psindex=11:(ncol(t)-ofst)
+      psindex=psindex[which(!is.na(t[i,psindex]))]
+      if(length(psindex)>1){
+        lastindex=psindex[length(psindex)]
+        firstindex=psindex[-length(psindex)]
+        ps<-paste("The ",paste(names[firstindex], collapse=", ")," and ",names[lastindex], " " , substring(units,1,nchar(units)-1),
                   " probabilities of 'survival' and their 95",sanitizestr("%")," confidence intervals are ",
-                  paste(sapply(t[i,11:(ncol(t)-offset)],function(x) paste(x)),collapse=", ")," and ", t[i,ncol(t)-ofst], " percent.",sep="")
+                  paste(sapply(t[i,firstindex],function(x) paste(x)),collapse=", ")," and ", t[i,lastindex], " percent.",sep="")
         
       }else{
-        ps<-paste("The ",names[11]," ", substring(units,1,nchar(units)-1),
+        ps<-paste("The ",names[psindex]," ", substring(units,1,nchar(units)-1),
                   " probability of 'survival' and 95",sanitizestr("%")," confidence interval is ",
-                  t[i,11]," percent.",sep="")  
+                  t[i,psindex]," percent.",sep="")  
       }
       #if no events
     }else{
