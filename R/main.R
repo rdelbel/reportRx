@@ -25,7 +25,9 @@ plotkm<-function(data,response,group=1,pos="bottomleft",units="months",CI=F,lege
     
   }else if(length(group)>1){
     return("Currently you can only stratify by 1 variable")
-  }else{      
+  }else{
+    if(class(data[,group])!="factor")
+      stop("group must be a vactor variable. (Or leave unspecified for no group)")
     lr<-survdiff(as.formula(paste("Surv(",response[1],",",response[2],")~", paste(group,collapse="+"),sep="")),data=data)
     lrpv<-1-pchisq(lr$chisq, length(lr$n)- 1)
     levelnames<-levels(data[,group])
