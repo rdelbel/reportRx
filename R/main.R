@@ -89,6 +89,7 @@ etsum<- function(data,response,group=1,times=c(12,24)){
 }
   
   if(class(group)!="numeric"){
+    kfit<-summary(survfit(as.formula(paste("Surv(",response[1],",",response[2],")~",group,sep=""))  ,data=data))
     med=by(data,data[,group],function(x) median(x[,response[1]],na.rm=T))
     min=by(data,data[,group],function(x) min(x[,response[1]],na.rm=T))
     max=by(data,data[,group],function(x) max(x[,response[1]],na.rm=T))
@@ -105,7 +106,6 @@ etsum<- function(data,response,group=1,times=c(12,24)){
       tab<-tab[,indx]
       tab<-tab[c(2:length(tab),1)]
     }else{
-      return(tab)
       tab<-tab[c(2,1)]}
     noeventsindx<-ifelse(length(which(tbl[,4]==0))!=0,
                          which(tbl[,4]==0),NA)
