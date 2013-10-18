@@ -106,7 +106,8 @@ etsum<- function(data,response,group=1,times=c(12,24)){
       tab<-tab[,indx]
       tab<-tab[c(2:length(tab),1)]
     }else{
-      tab<-tab[c(2,1)]}
+      tab<-tab[c(2:length(tab),1)]
+    }
     noeventsindx<-ifelse(length(which(tbl[,4]==0))!=0,
                          which(tbl[,4]==0),NA)
     if(!is.na(noeventsindx)){
@@ -188,7 +189,7 @@ petsum<-function(data,response,group=1,times=c(12,14),units="months"){
     
     if(is.na(t[i,3])) {km<-paste("The KM median event time has not been achieved due to lack of events.",sep="")
     }else if (!is.na(t[i,5])){km<-paste("The KM median event time is ",t[i,3]," with 95",sanitizestr("%")," confidence Interval (",t[i,4],",",t[i,5],").",sep="")
-    }else{km<-paste("The KM median event time is ",t[i,3]," with 95",sanitizestr("%")," confidence Interval (",t[i,4],",",t[i,10],").",sep="")}
+    }else{km<-paste("The KM median event time is ",t[i,3], " ",units, " with 95",sanitizestr("%")," confidence Interval (",t[i,4],",",t[i,10],").",sep="")}
     
     # if at least one event
     if(t[i,2]!=0){
