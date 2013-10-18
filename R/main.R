@@ -16,12 +16,12 @@
 #' require(survival)
 #' plotkm(lung,c("time","status))
 #' plotkm(lung,c("time","status),sex)
-plotkm<-function(data,response,group=1,pos="bottomleft",units="months",CI=F,legend=T){
+plotkm<-function(data,response,group=1,pos="bottomleft",units="months",CI=F,legend=T, title=""){
   if(class(group)=="numeric"){  
     kfit<-survfit(as.formula(paste("Surv(",response[1],",",response[2],")~1",sep="")),data=data)
     sk<-summary(kfit)$table
     levelnames<-paste("N=",sk[1], ", Events=",sk[4]," (",round(sk[4]/sk[1],2)*100,"%)",sep="")
-    main<-paste("KM-Curve for ",nicename(response[2]),sep="")
+    if(title=="")  title<-paste("KM-Curve for ",nicename(response[2]),sep="")
     
   }else if(length(group)>1){
     return("Currently you can only stratify by 1 variable")
@@ -32,7 +32,7 @@ plotkm<-function(data,response,group=1,pos="bottomleft",units="months",CI=F,lege
     lrpv<-1-pchisq(lr$chisq, length(lr$n)- 1)
     levelnames<-levels(data[,group])
     kfit<-survfit(as.formula(paste("Surv(",response[1],",",response[2],")~", paste(group,collapse="+"),sep="")),data=data)
-    main<-paste("KM-Curve for ",nicename(response[2])," stratified by ", nicename(group),sep="")
+    if(title=="") title<-paste("KM-Curve for ",nicename(response[2])," stratified by ", nicename(group),sep="")
     levelnames<-sapply(1:length(levelnames), function(x){paste(levelnames[x]," n=",lr$n[x],sep="")})
     
   }  
@@ -40,7 +40,7 @@ plotkm<-function(data,response,group=1,pos="bottomleft",units="months",CI=F,lege
   
   plot(kfit,mark.time=T, lty=1:length(levelnames),xlab=paste("Time (",cap(units),")",sep=""),
        ylab="Suvival Probability ",cex=1.1, conf.int=CI,
-       main=main)
+       main=title)
   
   
   if(legend){
