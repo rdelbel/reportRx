@@ -539,11 +539,11 @@ uvsum<-function(response,covs,data,type=NULL,strata=1,markup=T,sanitize=T,nicena
 #'@param TeX boolean indicating if you want to be able to view extra long tables in the LaTeX pdf. If TeX is T then the table will not convert properly to docx
 #'@keywords dataframe
 #'@export
-puvsum<-function(response,covs,data,type=NULL,strata=1,TeX=F){
+puvsum<-function(response,covs,data,type=NULL,strata=1,testing=F,TeX=F){
   if(!TeX){
-    print.xtable(xtable(uvsum(response,covs,data,type,strata)),include.rownames=F,sanitize.text.function=identity,table.placement="H")
+    print.xtable(xtable(uvsum(response,covs,data,type,strata,testing=testing)),include.rownames=F,sanitize.text.function=identity,table.placement="H")
   }else{
-    print.xtable(xtable(uvsum(response,covs,data,type,strata)),include.rownames=F,sanitize.text.function=identity,table.placement="H",floating=FALSE,tabular.environment="longtable")
+    print.xtable(xtable(uvsum(response,covs,data,type,strata,testing=testing)),include.rownames=F,sanitize.text.function=identity,table.placement="H",floating=FALSE,tabular.environment="longtable")
   }
   
 }
