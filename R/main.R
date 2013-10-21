@@ -348,7 +348,7 @@ covsum<-function(data,covs,maincov=NULL,numobs=NULL,markup=T,sanitize=T,nicename
   if(!is.null(maincov)){
     colnames(table)<-c("Covariate",paste("Full Sample (n=",N,")",sep=""),
                        mapply(function(x,y){paste(x," (n=",y,")",sep="")},
-                              names(table(data[,maincov])),table(data[,maincov])),"p-value (indep)")
+                              names(table(data[,maincov])),table(data[,maincov])),"p-value")
   }else{
     colnames(table)<-c("Covariate",paste("n=",N,sep=""))
     
