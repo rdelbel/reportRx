@@ -353,6 +353,7 @@ covsum<-function(data,covs,maincov=NULL,numobs=NULL,markup=T,sanitize=T,nicename
     colnames(table)<-c("Covariate",paste("n=",N,sep=""))
     
   }
+  colnames(table)<-sanitizestr(colnames(table))
   return(table)
 }
 
