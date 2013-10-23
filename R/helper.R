@@ -189,3 +189,28 @@ modelmatrix<-function(f,data=NULL){
   }else{
     return(x)
   }}
+
+matchcovariate=function(betanames,ucall){
+  out=as.vector(sapply(betanames,function(betaname){
+    splitbetaname=unlist(strsplit(betaname,":",fixed=T))
+    out=sapply(splitbetaname,function(bname){
+      indx=which(sapply(ucall,function(cov)charmatch(cov,bname))==1)
+      if(length(indx)==1)return(indx)
+      #If one  facorname is a subset of another
+      indx2<-which.max(sapply(ucall[indx],nchar))
+      if(length(indx2)==1) return(indx[indx2])
+      indx3<-which(sapply(ucall[indx2],function(c){substr(betaname,1,nchar(c))==c}))
+      if(length(indx3)==1)  return(ucall[indx[indx2[indx3]]])  
+      return(-1)      
+    })
+    if(-1 %in% out) return(-1)
+    result=0
+    n=length(out)
+    for(i in 1:length(out)){
+      result=result+out[i]*100^(n-1)
+      n=n-1
+    }
+    return(result)}))
+  if(-1 %in% out) return(-1)
+  return (out)
+}

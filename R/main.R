@@ -539,11 +539,11 @@ uvsum<-function(response,covs,data,type=NULL,strata=1,markup=T,sanitize=T,nicena
 #'@param TeX boolean indicating if you want to be able to view extra long tables in the LaTeX pdf. If TeX is T then the table will not convert properly to docx
 #'@keywords dataframe
 #'@export
-puvsum<-function(response,covs,data,type=NULL,strata=1,testing=F,TeX=F){
+puvsum<-function(response,covs,data,type=NULL,strata=1,TeX=F){
   if(!TeX){
-    print.xtable(xtable(uvsum(response,covs,data,type,strata,testing=testing)),include.rownames=F,sanitize.text.function=identity,table.placement="H")
+    print.xtable(xtable(uvsum(response,covs,data,type,strata)),include.rownames=F,sanitize.text.function=identity,table.placement="H")
   }else{
-    print.xtable(xtable(uvsum(response,covs,data,type,strata,testing=testing)),include.rownames=F,sanitize.text.function=identity,table.placement="H",floating=FALSE,tabular.environment="longtable")
+    print.xtable(xtable(uvsum(response,covs,data,type,strata)),include.rownames=F,sanitize.text.function=identity,table.placement="H",floating=FALSE,tabular.environment="longtable")
   }
   
 }
@@ -590,23 +590,24 @@ mvsum<-function(model,data,markup=T,sanitize=T,nicenames=T){
     }else if(type=="coxph"|type=="crr"){beta<-"HR(95%CI)"
     }else{ stop("type must be either coxph, logisitc, lm, crr, lm (or NULL)")}
     
-
+  ucall=unique(call)
+ 
+#   indx<-as.vector(sapply(betanames,function(string){
+#     
+#     indx<-which(sapply(call,function(cov){charmatch(cov,string)})==1)
+#     if(length(indx)==1) return(indx)
+#     #If one  facorname is a subset of another
+#     indx2<-which.max(sapply(call[indx],nchar))
+#     if(length(indx2)==1) return(indx[indx2])
+#     indx3<-which(sapply(call[indx2],function(c){substr(betaname,1,nchar(c))==c}))
+#     if(length(indx3)==1)  return(call[indx[indx2[indx3]]])  
+#     return(-1)
+#   }))
   
-  indx<-as.vector(sapply(betanames,function(string){
-    
-    indx<-which(sapply(call,function(cov){charmatch(cov,string)})==1)
-    if(length(indx)==1) return(indx)
-    #If one  facorname is a subset of another
-    indx2<-which.max(sapply(call[indx],nchar))
-    if(length(indx2)==1) return(indx[indx2])
-    indx3<-which(sapply(call[indx2],function(c){substr(betaname,1,nchar(c))==c}))
-    if(length(indx3)==1)  return(call[indx[indx2[indx3]]])  
-    return(-1)
-  }))
-  
+  indx=matchcovariate(betanames,ucall)
   if(min(indx)==-1) stop("Factor name + level name is the same as another factor name. Please change. Will fix this issue later") 
   
-  
+ 
   
   
   
