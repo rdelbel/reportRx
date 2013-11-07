@@ -578,17 +578,22 @@ mvsum<-function(model,data,markup=T,sanitize=T,nicenames=T){
   call<-unique(call)
   call<-call[which(is.na(sapply(call,function(cov){charmatch("strata(",cov)}))==T)]
   call<-gsub("\\s","", call)
+  type<-class(model)[1]  
+  
+  if(type!="lme"){
   betanames<-attributes(summary(model)$coef)$dimnames[[1]]
-    type<-class(model)[1]  
+  }else{
+    betanames<-names(model$coef$fixed)
+  }
   
   
  
     if(type=="glm"){ beta<-"OR(95%CI)"
                           betanames<-betanames[-1]
-    }else if(type=="lm"|type=="lm"){ beta<-"Estimate(95%CI)"
+    }else if(type=="lm"|type=="lm"|type=="lme"){ beta<-"Estimate(95%CI)"
                               betanames<-betanames[-1]
     }else if(type=="coxph"|type=="crr"){beta<-"HR(95%CI)"
-    }else{ stop("type must be either coxph, logisitc, lm, crr, lm (or NULL)")}
+    }else{ stop("type must be either coxph, logisitc, lm, crr, lme (or NULL)")}
     
   ucall=unique(call)
  
@@ -612,7 +617,7 @@ mvsum<-function(model,data,markup=T,sanitize=T,nicenames=T){
   
   
   y<-betaindx(indx)
-  if(type%in%c("lm","glm","lm")){
+  if(type%in%c("lm","glm","lm","lme")){
     y<-lapply(y,function(x){ x+1})
     betanames<-c("intercept",betanames)
   }
@@ -634,7 +639,10 @@ mvsum<-function(model,data,markup=T,sanitize=T,nicenames=T){
     reference=NULL
     title=NULL
     body=NULL
-    if(type!="crr"){
+    if(type=="lme"){
+      globalpvalue<-try(wald.test(b=model$coef$fixed[covariateindex],Sigma=vcov(model)[covariateindex,covariateindex],Terms=seq_along(covariateindex))$result$chi2[3]);
+    }
+    else if(type!="crr"){
       globalpvalue<-try(wald.test(b=coef(model)[covariateindex],Sigma=vcov(model)[covariateindex,covariateindex],Terms=seq_along(covariateindex))$result$chi2[3]);
     }else{
       globalpvalue<-try(wald.test(b=model$coef[covariateindex],Sigma=model$var[covariateindex,covariateindex],Terms=seq_along(covariateindex))$result$chi2[3]);
@@ -658,6 +666,12 @@ mvsum<-function(model,data,markup=T,sanitize=T,nicenames=T){
       hazardratio<-apply(cbind(m[covariateindex,1],m[covariateindex,1]-1.96*m[covariateindex,2],
                                m[covariateindex,1]+1.96*m[covariateindex,2]),1,psthr)        
       pvalues<-sapply(m[covariateindex,4],lpvalue)
+    }else if(type=="lme"){
+      m<-summary(model)$tTable      
+      hazardratio<-apply(cbind(m[covariateindex,1],m[covariateindex,1]-1.96*m[covariateindex,2],
+                               m[covariateindex,1]+1.96*m[covariateindex,2]),1,psthr) 
+      
+      pvalues<-c(sapply(m[covariateindex,5],lpvalue))
     }
     
     #if not interaction
