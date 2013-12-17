@@ -9,7 +9,6 @@
 #' @keywords model
 #' @export
 crrRx<-function(f,data){
-  require(cmprsk)
   k<-as.character(f)[3]
   covs<-removedollar(k)
   ff<-modelmatrix(f,data)
@@ -30,7 +29,6 @@ crrRx<-function(f,data){
 #' @keywords model
 #' @export
 boxcoxfitRx<-function(f,data,lambda=F){
-  require(geoR)
   x<-as.character(f)[3]
   y<-as.character(f)[2]
   time<- gsub("\\s","",unlist(strsplit(y,"+",fixed=T))[1])

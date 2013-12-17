@@ -10,12 +10,14 @@
 #' @param units string specifying what the unit of time is use lower case and plural
 #' @param CI boolean to specify if you want confidence intervals
 #' @param legend boolean to specify if you want a legend
+#' @param title title of plot
 #' @keywords plot
 #' @export 
 #' @examples
 #' require(survival)
-#' plotkm(lung,c("time","status))
-#' plotkm(lung,c("time","status),sex)
+#' lung$sex<-factor(lung$sex)
+#' plotkm(lung,c("time","status"))
+#' plotkm(lung,c("time","status"),"sex")
 plotkm<-function(data,response,group=1,pos="bottomleft",units="months",CI=F,legend=T, title=""){
   if(class(group)=="numeric"){  
     kfit<-survfit(as.formula(paste("Surv(",response[1],",",response[2],")~1",sep="")),data=data)
@@ -52,7 +54,7 @@ plotkm<-function(data,response,group=1,pos="bottomleft",units="months",CI=F,lege
 
 #'Get event time summary dataframe
 #'
-#'This functionw will output a dataframe with usefull summary statistics from a coxph model
+#'This function will output a dataframe with usefull summary statistics from a coxph model
 #'
 #'@param data dataframe containing data
 #'@param response character vector with names of columns to use for response
@@ -62,9 +64,10 @@ plotkm<-function(data,response,group=1,pos="bottomleft",units="months",CI=F,lege
 #'@export
 #'@examples
 #'require(survival)
-#'etsum(lung,c("time","status"),sex)
+#'lung$sex<-factor(lung$sex)
+#'etsum(lung,c("time","status"),"sex")
 #'etsum(lung,c("time","status"))
-#'etsum(lung,c("time","status"),sex,c(1,2,3))
+#'etsum(lung,c("time","status"),"sex",c(1,2,3))
 etsum<- function(data,response,group=1,times=c(12,24)){
   if(class(group)=="numeric"){
   kfit<-summary(survfit(as.formula(paste("Surv(",response[1],",",response[2],")~",group,sep=""))  ,data=data))
@@ -164,10 +167,11 @@ etsum<- function(data,response,group=1,times=c(12,24)){
 #'@keywords print
 #'@export 
 #'@examples
-#'#'require(survival)
-#'etsum(lung,c("time","status"),sex)
-#'etsum(lung,c("time","status"))
-#'etsum(lung,c("time","status"),sex,c(1,2,3),"months")
+#'require(survival)
+#'lung$sex<-factor(lung$sex)
+#'petsum(lung,c("time","status"),"sex")
+#'petsum(lung,c("time","status"))
+#'petsum(lung,c("time","status"),"sex",c(1,2,3),"months")
 petsum<-function(data,response,group=1,times=c(12,14),units="months"){
   t<-etsum(data,response,group,times)
   

@@ -25,10 +25,11 @@
   text in LaTeX
 }
 \examples{
-#'require(survival)
-etsum(lung,c("time","status"),sex)
-etsum(lung,c("time","status"))
-etsum(lung,c("time","status"),sex,c(1,2,3),"months")
+require(survival)
+lung$sex<-factor(lung$sex)
+petsum(lung,c("time","status"),"sex")
+petsum(lung,c("time","status"))
+petsum(lung,c("time","status"),"sex",c(1,2,3),"months")
 }
 \keyword{print}
 

@@ -3,7 +3,7 @@
 \title{Plot KM curve}
 \usage{
   plotkm(data, response, group = 1, pos = "bottomleft",
-    units = "months", CI = F, legend = T)
+    units = "months", CI = F, legend = T, title = "")
 }
 \arguments{
   \item{data}{dataframe containing your data}
@@ -24,6 +24,8 @@
   intervals}
 
   \item{legend}{boolean to specify if you want a legend}
+
+  \item{title}{title of plot}
 }
 \description{
   This function will plot a KM curve with possible
@@ -32,8 +34,9 @@
 }
 \examples{
 require(survival)
-plotkm(lung,c("time","status))
-plotkm(lung,c("time","status),sex)
+lung$sex<-factor(lung$sex)
+plotkm(lung,c("time","status"))
+plotkm(lung,c("time","status"),"sex")
 }
 \keyword{plot}
 

@@ -17,14 +17,15 @@
   time provbabilities for.}
 }
 \description{
-  This functionw will output a dataframe with usefull
+  This function will output a dataframe with usefull
   summary statistics from a coxph model
 }
 \examples{
 require(survival)
-etsum(lung,c("time","status"),sex)
+lung$sex<-factor(lung$sex)
+etsum(lung,c("time","status"),"sex")
 etsum(lung,c("time","status"))
-etsum(lung,c("time","status"),sex,c(1,2,3))
+etsum(lung,c("time","status"),"sex",c(1,2,3))
 }
 \keyword{dataframe}
 
