@@ -1,12 +1,12 @@
 Package: reportRx
-Title: Tools for creating
-    clinical reports in latex and word
-Description: Tools for creating clinical reports in latex and word. Converting
-    to docx requires imagemagik and pandoc.
-Version: 0.1
-License: GPL-2
+Title: Tools for automatically generating reproducible clinical report
+Description: reportRx is a set of tools that integrates with LaTeX and knitr to automatically generate generate reproducible clinical reports. Fuctions to automatically produce demoraphic tables, outcome summaries, univariate and multivariate analysis results and more are included.
+Version: 1.0
+License: GPL-3
 Author: Ryan Del Bel
-    <rdelbel@gmail.com>
+    <rdelbel@gmail.com>,
+    Wei Xu
+    <wxu@uhnres.utoronto.ca>
 Maintainer: Ryan Del Bel
     <rdelbel@gmail.com>
 Imports:
@@ -21,4 +21,3 @@ Collate:
     'helper.R'
     'main.R'
     'misc.R'
-    'GWASQC.R'
