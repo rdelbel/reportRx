@@ -6,11 +6,13 @@
 #' @param data dataframe containing your data
 #' @param response character vector with names of columns to use for response
 #' @param group string specifiying the column name of stratification variable
-#' @param pos what position you want the legend to be. Current option are bottomleft and topright
+#' @param legend.pos what position you want the legend to be. use NA for no legend
+#' @param hr.pos what position do you want the hr and p-value to be. Use NA for no hr and p-value
 #' @param units string specifying what the unit of time is use lower case and plural
 #' @param CI boolean to specify if you want confidence intervals
 #' @param legend boolean to specify if you want a legend
 #' @param title title of plot
+#' @param show.nrisk boolean indicating if you want to show the number at risk
 #' @keywords plot
 #' @export 
 #' @examples
@@ -18,38 +20,47 @@
 #' lung$sex<-factor(lung$sex)
 #' plotkm(lung,c("time","status"))
 #' plotkm(lung,c("time","status"),"sex")
-plotkm<-function(data,response,group=1,pos="bottomleft",units="months",CI=F,legend=T, title=""){
-  if(class(group)=="numeric"){  
-    kfit<-survfit(as.formula(paste("Surv(",response[1],",",response[2],")~1",sep="")),data=data)
-    sk<-summary(kfit)$table
-    levelnames<-paste("N=",sk[1], ", Events=",sk[4]," (",round(sk[4]/sk[1],2)*100,"%)",sep="")
-    if(title=="")  title<-paste("KM-Curve for ",nicename(response[2]),sep="")
-    
-  }else if(length(group)>1){
-    return("Currently you can only stratify by 1 variable")
-  }else{
-    if(class(data[,group])!="factor")
-      stop("group must be a vactor variable. (Or leave unspecified for no group)")
-    lr<-survdiff(as.formula(paste("Surv(",response[1],",",response[2],")~", paste(group,collapse="+"),sep="")),data=data)
-    lrpv<-1-pchisq(lr$chisq, length(lr$n)- 1)
-    levelnames<-levels(data[,group])
-    kfit<-survfit(as.formula(paste("Surv(",response[1],",",response[2],")~", paste(group,collapse="+"),sep="")),data=data)
-    if(title=="") title<-paste("KM-Curve for ",nicename(response[2])," stratified by ", nicename(group),sep="")
-    levelnames<-sapply(1:length(levelnames), function(x){paste(levelnames[x]," n=",lr$n[x],sep="")})
-    
-  }  
+plotkm<-function(data,response,group=1,units="months", show.nrisk=T,CI=F,legend.pos='bottomleft',hr.pos='topright', title=""){
   
+  survplot(as.formula(paste("Surv(",response[1],",",response[2],")~",group)), 
+           data =data,
+           main = ifelse(title=="",paste0("KM-Curve for ",nicename(response[2])),title), 
+           xlab = paste0('Time (',units,')'), ylab = "'Survival' Probability",color.nrisk=F,col=1,
+           lty=if(class(group)=="numeric") 1 else 1:length(levels(data[,group])),
+           legend.pos=legend.pos,hr.pos=hr.pos,conf.int=CI, show.nrisk=show.nrisk
+  )
+#   if(class(group)=="numeric"){  
+#     kfit<-survfit(as.formula(paste("Surv(",response[1],",",response[2],")~1",sep="")),data=data)
+#     sk<-summary(kfit)$table
+#     levelnames<-paste("N=",sk[1], ", Events=",sk[4]," (",round(sk[4]/sk[1],2)*100,"%)",sep="")
+#     if(title=="")  title<-paste("KM-Curve for ",nicename(response[2]),sep="")
+#     
+#   }else if(length(group)>1){
+#     return("Currently you can only stratify by 1 variable")
+#   }else{
+#     if(class(data[,group])!="factor")
+#       stop("group must be a vactor variable. (Or leave unspecified for no group)")
+#     lr<-survdiff(as.formula(paste("Surv(",response[1],",",response[2],")~", paste(group,collapse="+"),sep="")),data=data)
+#     lrpv<-1-pchisq(lr$chisq, length(lr$n)- 1)
+#     levelnames<-levels(data[,group])
+#     kfit<-survfit(as.formula(paste("Surv(",response[1],",",response[2],")~", paste(group,collapse="+"),sep="")),data=data)
+#     if(title=="") title<-paste("KM-Curve for ",nicename(response[2])," stratified by ", nicename(group),sep="")
+#     levelnames<-sapply(1:length(levelnames), function(x){paste(levelnames[x]," n=",lr$n[x],sep="")})
+#     
+#   }  
+#   
+#   
+#   plot(kfit,mark.time=T, lty=1:length(levelnames),xlab=paste("Time (",cap(units),")",sep=""),
+#        ylab="Suvival Probability ",cex=1.1, conf.int=CI,
+#        main=title)
+#   
+#   
+#   if(legend){
+#     if(class(group)=="numeric"){legend(pos,levelnames,lty=1:length(levelnames),bty="n")
+#     }else{ legend(pos,c(levelnames,paste("p-value=",pvalue(lrpv)," (Log Rank)",sep="")),
+#                   col=c(rep(1,length(levelnames)),"white"),lty=1:(length(levelnames)+1),bty="n")}
+#   }
   
-  plot(kfit,mark.time=T, lty=1:length(levelnames),xlab=paste("Time (",cap(units),")",sep=""),
-       ylab="Suvival Probability ",cex=1.1, conf.int=CI,
-       main=title)
-  
-  
-  if(legend){
-    if(class(group)=="numeric"){legend(pos,levelnames,lty=1:length(levelnames),bty="n")
-    }else{ legend(pos,c(levelnames,paste("p-value=",pvalue(lrpv)," (Log Rank)",sep="")),
-                  col=c(rep(1,length(levelnames)),"white"),lty=1:(length(levelnames)+1),bty="n")}
-  }
 }
 
 #'Get event time summary dataframe
@@ -192,7 +203,7 @@ petsum<-function(data,response,group=1,times=c(12,14),units="months"){
   out<-sapply(seq_len(nrow(t)),function(i){
     
     if(is.na(t[i,3])) {km<-paste("The KM median event time has not been achieved due to lack of events.",sep="")
-    }else if (!is.na(t[i,5])){km<-paste("The KM median event time is ",t[i,3]," with 95",sanitizestr("%")," confidence Interval (",t[i,4],",",t[i,5],").",sep="")
+    }else if (!is.na(t[i,5])){km<-paste("The KM median event time is ",t[i,3]," ",units," with 95",sanitizestr("%")," confidence Interval (",t[i,4],",",t[i,5],").",sep="")
     }else{km<-paste("The KM median event time is ",t[i,3], " ",units, " with 95",sanitizestr("%")," confidence Interval (",t[i,4],",",t[i,10],").",sep="")}
     
     # if at least one event
@@ -237,12 +248,14 @@ petsum<-function(data,response,group=1,times=c(12,14),units="months"){
 #'@param covs character vector with the names of columns to include in table
 #'@param maincov covariate to stratify table by
 #'@param numobs named list overriding the number of people you expect to have the covariate
+#'@param nonparametric boollean indicating if you want parametric (anova) or nonparametric 
+#'(Kruskal-Wallis) p-values for continuous variables. 
 #'@param markup boolean indicating if you want latex markup
 #'@param sanitize boolean indicating if you want to sanitize all strings to not break LaTeX
 #'@param nicenames booling indicating if you want to replace . and _ in strings with a space
 #'@keywords dataframe
 #'@export
-covsum<-function(data,covs,maincov=NULL,numobs=NULL,markup=T,sanitize=T,nicenames=T){
+covsum<-function(data,covs,maincov=NULL,numobs=NULL,nonparametric=F,markup=T,sanitize=T,nicenames=T){
   
   if(!markup){
     lbld<-identity
@@ -308,9 +321,15 @@ covsum<-function(data,covs,maincov=NULL,numobs=NULL,markup=T,sanitize=T,nicename
       #setup the first column
       factornames<-c("Mean (sd)", "Median (Min,Max)",factornames)
       if(!is.null(maincov)){
+        if(nonparametric){
+          p<-try(kruskal.test(data[,cov],data[,maincov])$p.value)
+          if(class(p)=="try-error") p<-NA
+        }else{        
         p<-try(anova(lm(data[,cov]~data[,maincov]))[5][[1]][1])
         if(class(p)=="try-error") p<-NA
-        p<-lpvalue(p)}
+        }
+        p<-lpvalue(p)
+      }
       
       
       #set up the main columns
