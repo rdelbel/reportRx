@@ -2,8 +2,8 @@
 \alias{covsum}
 \title{Get covariate summary dataframe}
 \usage{
-  covsum(data, covs, maincov = NULL, numobs = NULL,
-    markup = T, sanitize = T, nicenames = T)
+covsum(data, covs, maincov = NULL, numobs = NULL, nonpar = F,
+  markup = T, sanitize = T, nicenames = T)
 }
 \arguments{
   \item{data}{dataframe containing data}
@@ -16,6 +16,10 @@
   \item{numobs}{named list overriding the number of people
   you expect to have the covariate}
 
+  \item{nonparametric}{boollean indicating if you want
+  parametric (anova) or nonparametric (Kruskal-Wallis)
+  p-values for continuous variables.}
+
   \item{markup}{boolean indicating if you want latex
   markup}
 
@@ -26,7 +30,7 @@
   replace . and _ in strings with a space}
 }
 \description{
-  Returns a dataframe corresponding to a descriptive table
+Returns a dataframe corresponding to a descriptive table
 }
 \keyword{dataframe}
 

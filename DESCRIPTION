@@ -20,8 +20,4 @@ Imports:
     geoR,
     stringr,
 Depends:
-  reshape
-Collate:
-    'helper.R'
-    'main.R'
-    'misc.R'
+    reshape

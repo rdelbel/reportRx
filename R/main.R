@@ -10,9 +10,11 @@
 #' @param hr.pos what position do you want the hr and p-value to be. Use NA for no hr and p-value
 #' @param units string specifying what the unit of time is use lower case and plural
 #' @param CI boolean to specify if you want confidence intervals
+#' @param HR boolean to specify if you want the hazard ratio from a cox model
 #' @param legend boolean to specify if you want a legend
 #' @param title title of plot
 #' @param show.nrisk boolean indicating if you want to show the number at risk
+#' @param cex controls the size of text in the legends
 #' @keywords plot
 #' @export 
 #' @examples
@@ -20,15 +22,14 @@
 #' lung$sex<-factor(lung$sex)
 #' plotkm(lung,c("time","status"))
 #' plotkm(lung,c("time","status"),"sex")
-plotkm<-function(data,response,group=1,units="months", show.nrisk=T,CI=F,legend.pos='bottomleft',hr.pos='topright', title=""){
+plotkm<-function(data,response,group=1,units="months", show.nrisk=T,CI=F,HR=F,legend.pos='bottomleft',hr.pos='topright',cex=1, title=""){
   
   survplot(as.formula(paste("Surv(",response[1],",",response[2],")~",group)), 
            data =data,
            main = ifelse(title=="",paste0("KM-Curve for ",nicename(response[2])),title), 
            xlab = paste0('Time (',units,')'), ylab = "'Survival' Probability",color.nrisk=F,col=1,
            lty=if(class(group)=="numeric") 1 else 1:length(levels(data[,group])),
-           legend.pos=legend.pos,hr.pos=hr.pos,conf.int=CI, show.nrisk=show.nrisk
-  )
+           legend.pos=legend.pos,hr.pos=hr.pos,conf.int=CI, show.nrisk=show.nrisk,HR=HR,cex=cex)
 #   if(class(group)=="numeric"){  
 #     kfit<-survfit(as.formula(paste("Surv(",response[1],",",response[2],")~1",sep="")),data=data)
 #     sk<-summary(kfit)$table
@@ -255,7 +256,7 @@ petsum<-function(data,response,group=1,times=c(12,14),units="months"){
 #'@param nicenames booling indicating if you want to replace . and _ in strings with a space
 #'@keywords dataframe
 #'@export
-covsum<-function(data,covs,maincov=NULL,numobs=NULL,nonparametric=F,markup=T,sanitize=T,nicenames=T){
+covsum<-function(data,covs,maincov=NULL,numobs=NULL,nonpar=F,markup=T,sanitize=T,nicenames=T){
   
   if(!markup){
     lbld<-identity
@@ -321,7 +322,7 @@ covsum<-function(data,covs,maincov=NULL,numobs=NULL,nonparametric=F,markup=T,san
       #setup the first column
       factornames<-c("Mean (sd)", "Median (Min,Max)",factornames)
       if(!is.null(maincov)){
-        if(nonparametric){
+        if(nonpar){
           p<-try(kruskal.test(data[,cov],data[,maincov])$p.value)
           if(class(p)=="try-error") p<-NA
         }else{        
@@ -388,15 +389,17 @@ covsum<-function(data,covs,maincov=NULL,numobs=NULL,nonparametric=F,markup=T,san
 #'@param covs character vector with the names of columns to include in table
 #'@param maincov covariate to stratify table by
 #'@param numobs named list overriding the number of people you expect to have the covariate
+#'@param nonpar boolean indicating if you want nonparametric (kruskal wallis) or parametric (anova) tests for continuous covariates. Default is FALSE.
 #'@param TeX boolean indicating if you want to be able to view extra long tables in the LaTeX pdf. If TeX is T then the table will not convert properly to docx
 #'@keywords print
 #'@export
-pcovsum<-function(data,covs,maincov=NULL,numobs=NULL,TeX=F){
+pcovsum<-function(data,covs,maincov=NULL,numobs=NULL,nonpar=F,TeX=F){
+  tbl=covsum(data,covs,maincov,numobs,nonpar)
   if(!TeX){
-    print.xtable(xtable(covsum(data,covs,maincov,numobs)),include.rownames=F,sanitize.text.function=identity,table.placement="H")
+    print.xtable(xtable(tbl,align=rep("l",ncol(tbl)+1)),include.rownames=F,sanitize.text.function=identity,table.placement="H")
   }else{  
     
-    print.xtable(xtable(covsum(data,covs,maincov,numobs)),include.rownames=F,sanitize.text.function=identity,table.placement="H",floating=FALSE,tabular.environment="longtable")
+    print.xtable(xtable(tbl,align=rep("l",ncol(tbl)+1)),include.rownames=F,sanitize.text.function=identity,table.placement="H",floating=FALSE,tabular.environment="longtable")
   }}
 
 #'Get univariate summary dataframe

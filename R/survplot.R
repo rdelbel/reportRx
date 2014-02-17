@@ -72,7 +72,7 @@ survplot <- function(x, data = NULL, subset = NULL,
      snames, stitle, 
      col, lty, lwd,
      show.nrisk = TRUE, color.nrisk = TRUE,
-     hr.pos = 'topright', legend.pos = 'bottomleft', ...) {
+     hr.pos = 'topright', legend.pos = 'bottomleft',HR=F,cex=1, ...) {
   eval(bquote(s <- survfit(x, data = data, subset = .(substitute(subset)))))
   if('strata' %in% names(s)) {
     if(missing(stitle)) stitle <- strsplit(deparse(x), " ~ ")[[1]][2]
@@ -102,7 +102,7 @@ survplot <- function(x, data = NULL, subset = NULL,
   plot(s, col = col, lty = lty, lwd = lwd, ...)
   if(length(legend.pos) > 1 || !is.na(legend.pos)) {
     legend(legend.pos, legend = snames, title = stitle,
-      col = col, lty = lty, lwd = lwd, bty = 'n')
+      col = col, lty = lty, lwd = lwd, bty = 'n',cex=cex)
   }
   if(ns == 2) {
     eval(bquote(cox <- summary(coxph(x, data = data, subset = .(substitute(subset))))))
@@ -110,7 +110,8 @@ survplot <- function(x, data = NULL, subset = NULL,
     p <- format(cox$sctest[3], digits = 2)
     txt1 <- paste('HR = ', hr[1], ' (', hr[2], ' - ', hr[3], ')', sep = '')
     txt2 <- paste('logrank P =', p)
-    legend(hr.pos, legend = c(txt1, txt2), bty = 'n')
+    if(HR) txtn=c(txt1,txt2) else txtn=txt2
+    legend(hr.pos, legend = txtn, bty = 'n',cex=cex)
   }
   if(show.nrisk) {
     addNrisk(s, labels = snames,
