@@ -23,12 +23,14 @@
 #' plotkm(lung,c("time","status"))
 #' plotkm(lung,c("time","status"),"sex")
 plotkm<-function(data,response,group=1,units="months", show.nrisk=T,CI=F,HR=F,legend.pos='bottomleft',hr.pos='topright',cex=1, title=""){
-  
+  if(group!=1){
+    if(!is.factor(data[,group])) stop("please make sure group variable is a factor")
+  }
   survplot(as.formula(paste("Surv(",response[1],",",response[2],")~",group)), 
            data =data,
            main = ifelse(title=="",paste0("KM-Curve for ",nicename(response[2])),title), 
            xlab = paste0('Time (',units,')'), ylab = "'Survival' Probability",color.nrisk=F,col=1,
-           lty=if(class(group)=="numeric") 1 else 1:length(levels(data[,group])),
+           lty=if(group==1) 1 else 1:length(unique(data[,group])),
            legend.pos=legend.pos,hr.pos=hr.pos,conf.int=CI, show.nrisk=show.nrisk,HR=HR,cex=cex)
 #   if(class(group)=="numeric"){  
 #     kfit<-survfit(as.formula(paste("Surv(",response[1],",",response[2],")~1",sep="")),data=data)
@@ -41,8 +43,8 @@ plotkm<-function(data,response,group=1,units="months", show.nrisk=T,CI=F,HR=F,le
 #   }else{
 #     if(class(data[,group])!="factor")
 #       stop("group must be a vactor variable. (Or leave unspecified for no group)")
-#     lr<-survdiff(as.formula(paste("Surv(",response[1],",",response[2],")~", paste(group,collapse="+"),sep="")),data=data)
-#     lrpv<-1-pchisq(lr$chisq, length(lr$n)- 1)
+    # lr<-survdiff(as.formula(paste("Surv(",response[1],",",response[2],")~", paste(group,collapse="+"),sep="")),data=data)
+    # lrpv<-1-pchisq(lr$chisq, length(lr$n)- 1)
 #     levelnames<-levels(data[,group])
 #     kfit<-survfit(as.formula(paste("Surv(",response[1],",",response[2],")~", paste(group,collapse="+"),sep="")),data=data)
 #     if(title=="") title<-paste("KM-Curve for ",nicename(response[2])," stratified by ", nicename(group),sep="")

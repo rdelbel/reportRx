@@ -104,12 +104,14 @@ survplot <- function(x, data = NULL, subset = NULL,
     legend(legend.pos, legend = snames, title = stitle,
       col = col, lty = lty, lwd = lwd, bty = 'n',cex=cex)
   }
-  if(ns == 2) {
+  if(ns !=1) {
+    eval(bquote(lr <- survdiff(x, data = data, subset = .(substitute(subset)))))
+    lrpv<-pvalue(1-pchisq(lr$chisq, length(lr$n)- 1))
     eval(bquote(cox <- summary(coxph(x, data = data, subset = .(substitute(subset))))))
     hr <- format(cox$conf.int[1, c(1, 3, 4)], digits = 2)
-    p <- format(cox$sctest[3], digits = 2)
+    p <- pvalue(lrpv)
     txt1 <- paste('HR = ', hr[1], ' (', hr[2], ' - ', hr[3], ')', sep = '')
-    txt2 <- paste('logrank P =', p)
+    txt2 <- paste('p-value: ', p)
     if(HR) txtn=c(txt1,txt2) else txtn=txt2
     legend(hr.pos, legend = txtn, bty = 'n',cex=cex)
   }
