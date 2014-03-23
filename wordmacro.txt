@@ -5,17 +5,18 @@ The macro currently formats the tables, centers the images, and deltes the [H]. 
 
 
 Sub reportRx()
-
+ 
+ 
   Application.ScreenUpdating = True
     Dim tbl As Table
     For Each tbl In ActiveDocument.Tables
         tbl.Style = "Colorful List - Accent 3"
         tbl.ApplyStyleFirstColumn = False
        tbl.Rows.Alignment = wdAlignRowCenter
-    
+   
     Next
-    
-  
+   
+ 
       Dim shpIn As InlineShape, shp As Shape
   For Each shpIn In ActiveDocument.InlineShapes
     shpIn.Select
@@ -25,7 +26,7 @@ Sub reportRx()
     shp.Select
     Selection.ParagraphFormat.Alignment = wdAlignParagraphCenter
   Next shp
-  
+ 
   With Selection
 .HomeKey wdStory
 With .Find
@@ -35,7 +36,22 @@ While .Execute(findText:="[H]", _
 MatchWholeWord:=True)
 Selection.Range.Paragraphs(1).Range.Delete
 Wend
+ 
+With ActiveDocument.Styles("Normal").ParagraphFormat
+         .SpaceAfter = 6
+         .SpaceBefore = 6
+        
+  
+    With ActiveDocument
+         For i = 1 To .Tables.Count
+        .Tables(i).Range.ParagraphFormat.SpaceAfter = 0
+        .Tables(i).Range.ParagraphFormat.SpaceBefore = 0
+        .Tables(i).Range.ParagraphFormat.Alignment = wdAlignParagraphLeft
+      
+        Next
+     End With
+    End With
 End With
 End With
-
+ 
 End Sub
