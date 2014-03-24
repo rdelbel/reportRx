@@ -83,8 +83,9 @@ cap <- function(x) {
 #' @export
 nicename<-function(strings){
   out<-sapply(strings,function(x){
-    x<-chartr(".", " ",x)
     x<-chartr("_", " ",x)
+    x=gsub("(?<=[^0-9])(\\.)"," ",x,perl=T)
+    x=gsub("(\\.)(?=[^0-9])"," ",x,perl=T)
     return(x)})
   return(out)
 }
